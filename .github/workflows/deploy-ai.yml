@@ -18,7 +18,7 @@ jobs:
         shell: powershell
         run: |
           cd C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service
-          .\.venv\Scripts\Activate.ps1
+          C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\.venv\Scripts\Activate.ps1
           pip install -r requirements.txt
 
       - name: Restart service
@@ -27,7 +27,7 @@ jobs:
           Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force
           Start-Sleep -Seconds 2
           cd C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service
-          .\.venv\Scripts\Activate.ps1
+          C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\.venv\Scripts\Activate.ps1
           Start-Process python -ArgumentList "-m","uvicorn","app.main:app","--host","0.0.0.0","--port","8001" -WindowStyle Hidden
 
       - name: Health check
