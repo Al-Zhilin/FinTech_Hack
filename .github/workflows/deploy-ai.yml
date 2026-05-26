@@ -18,7 +18,7 @@ jobs:
         shell: powershell
         run: |
           cd C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service
-          C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\.venv\Scripts\Activate.ps1
+          .\.venv\Scripts\Activate.ps1
           pip install -r requirements.txt
 
       - name: Restart service
@@ -26,13 +26,29 @@ jobs:
         run: |
           Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force
           Start-Sleep -Seconds 2
-          cd C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service
-          C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\.venv\Scripts\Activate.ps1
-          Start-Process python -ArgumentList "-m","uvicorn","app.main:app","--host","0.0.0.0","--port","8001" -WindowStyle Hidden
+          
+          $action = New-ScheduledTaskAction `
+            -Execute "powershell.exe" `
+            -Argument "-NoProfile -WindowStyle Hidden -Command `"
+              cd 'C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service';
+              .\.venv\Scripts\Activate.ps1;
+              uvicorn app.main:app --host 0.0.0.0 --port 8001
+            `""
+          
+          $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(3)
+          
+          Register-ScheduledTask `
+            -TaskName "AIService" `
+            -Action $action `
+            -Trigger $trigger `
+            -Force `
+            -RunLevel Highest | Out-Null
+          
+          Start-ScheduledTask -TaskName "AIService"
+          Start-Sleep -Seconds 5
 
       - name: Health check
         shell: powershell
         run: |
-          Start-Sleep -Seconds 5
           $r = Invoke-WebRequest -Uri "http://localhost:8001/health" -UseBasicParsing
           if ($r.StatusCode -ne 200) { exit 1 }
