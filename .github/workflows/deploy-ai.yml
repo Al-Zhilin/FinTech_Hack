@@ -8,23 +8,17 @@ jobs:
   deploy:
     runs-on: self-hosted
     steps:
-      - name: Set paths
-        shell: powershell
-        run: |
-          echo "VENV=$env:USERPROFILE\PycharmProjects\PythonProject\.venv\Scripts\Activate.ps1" >> $env:GITHUB_ENV
-          echo "PROJECT=$env:USERPROFILE\PycharmProjects\PythonProject\ai-service" >> $env:GITHUB_ENV
-
       - name: Pull code
         shell: powershell
         run: |
-          cd $env:PROJECT
+          cd C:\Users\Fitle\PycharmProjects\PythonProject\ai-service
           git pull origin ai
 
       - name: Install deps
         shell: powershell
         run: |
-          & $env:VENV
-          cd $env:PROJECT
+          C:\Users\Fitle\PycharmProjects\PythonProject\.venv\Scripts\Activate.ps1
+          cd C:\Users\Fitle\PycharmProjects\PythonProject\ai-service
           pip install -r requirements.txt
 
       - name: Restart service
@@ -33,14 +27,11 @@ jobs:
           Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force
           Start-Sleep -Seconds 2
 
-          $venv = $env:VENV
-          $project = $env:PROJECT
-
           $action = New-ScheduledTaskAction `
             -Execute "powershell.exe" `
             -Argument "-NoProfile -WindowStyle Hidden -Command `"
-              & '$venv';
-              cd '$project';
+              C:\Users\Fitle\PycharmProjects\PythonProject\.venv\Scripts\Activate.ps1;
+              cd 'C:\Users\Fitle\PycharmProjects\PythonProject\ai-service';
               uvicorn app.main:app --host 0.0.0.0 --port 8001
             `""
 

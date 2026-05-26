@@ -50,7 +50,7 @@ TESTS: list[dict] = [
         "request_body": {
             "user_id": "test-001",
             "query": "Что такое диверсификация портфеля?",
-            "context": {"history": [], "user_profile": {}},
+            "context": {"user_profile": {}},
             "mode": "chat",
         },
         "expected": {
@@ -68,7 +68,7 @@ TESTS: list[dict] = [
         "request_body": {
             "user_id": "test_robust",
             "query": "",
-            "context": {"history": [], "user_profile": {}},
+            "context": {"user_profile": {}},
             "mode": "chat",
         },
         "expected": {"not_empty_text": True},
@@ -81,7 +81,7 @@ TESTS: list[dict] = [
         "request_body": {
             "user_id": "test_robust",
             "query": "asdfghjkl",
-            "context": {"history": [], "user_profile": {}},
+            "context": {"user_profile": {}},
             "mode": "chat",
         },
         "expected": {"not_empty_text": True},
@@ -94,7 +94,7 @@ TESTS: list[dict] = [
         "request_body": {
             "user_id": "test_robust",
             "query": "lorem ipsum dolor sit amet " * 50,
-            "context": {"history": [], "user_profile": {}},
+            "context": {"user_profile": {}},
             "mode": "chat",
         },
         "expected": {"not_empty_text": True},
@@ -107,7 +107,7 @@ TESTS: list[dict] = [
         "request_body": {
             "user_id": "test_robust",
             "query": "💰 Сколько 🤔 стоит 📈 биткоин сегодня?? 🚀",
-            "context": {"history": [], "user_profile": {}},
+            "context": {"user_profile": {}},
             "mode": "chat",
         },
         "expected": {"not_empty_text": True},
@@ -120,7 +120,7 @@ TESTS: list[dict] = [
         "request_body": {
             "user_id": "test_robust",
             "query": "What is the current EUR/USD exchange rate?",
-            "context": {"history": [], "user_profile": {}},
+            "context": {"user_profile": {}},
             "mode": "chat",
         },
         "expected": {"not_empty_text": True},
@@ -133,7 +133,7 @@ TESTS: list[dict] = [
         "request_body": {
             "user_id": "test_robust",
             "query": "ЧТО ТАКОЕ ИНФЛЯЦИЯ?!?!?!?!",
-            "context": {"history": [], "user_profile": {}},
+            "context": {"user_profile": {}},
             "mode": "chat",
         },
         "expected": {"not_empty_text": True},
@@ -148,7 +148,7 @@ TESTS: list[dict] = [
         "request_body": {
             "user_id": "test_planner",
             "query": "Что такое ETF?",
-            "context": {"history": [], "user_profile": {}},
+            "context": {"user_profile": {}},
             "mode": "chat",
         },
         "expected": {"intent": "question"},
@@ -162,7 +162,7 @@ TESTS: list[dict] = [
         "request_body": {
             "user_id": "test_planner",
             "query": "Какой сейчас курс доллара?",
-            "context": {"history": [], "user_profile": {}},
+            "context": {"user_profile": {}},
             "mode": "chat",
         },
         "expected": {"intent": "analysis"},
@@ -176,7 +176,7 @@ TESTS: list[dict] = [
         "request_body": {
             "user_id": "test_planner",
             "query": "Добавь трату 500 рублей на еду",
-            "context": {"history": [], "user_profile": {}},
+            "context": {"user_profile": {}},
             "mode": "chat",
         },
         "expected": {"intent": "action"},
@@ -190,7 +190,7 @@ TESTS: list[dict] = [
         "request_body": {
             "user_id": "test_planner",
             "query": "Стоит ли мне взять ипотеку под 15%?",
-            "context": {"history": [], "user_profile": {}},
+            "context": {"user_profile": {}},
             "mode": "chat",
         },
         "expected": {"intent": "advice"},
@@ -204,7 +204,7 @@ TESTS: list[dict] = [
         "request_body": {
             "user_id": "test_planner",
             "query": "Привет, как дела?",
-            "context": {"history": [], "user_profile": {}},
+            "context": {"user_profile": {}},
             "mode": "chat",
         },
         "expected": {"intent": "casual"},

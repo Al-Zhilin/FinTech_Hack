@@ -15,7 +15,6 @@ class UserProfile(BaseModel):
 
 
 class ContextModel(BaseModel):
-    history: list[dict[str, Any]] = []
     user_profile: UserProfile = UserProfile()
 
 
