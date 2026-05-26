@@ -4,84 +4,60 @@ on:
   push:
     branches: [ai]
 
-
 jobs:
   deploy:
     runs-on: self-hosted
     steps:
-      - name: Pull code
+      - name: Clone or pull
         shell: powershell
         run: |
-          Write-Host "=== PULL CODE ===" -ForegroundColor Cyan
-          cd C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service
-          git pull origin ai
-          Write-Host "Pull OK" -ForegroundColor Green
+          $repo = "https://github.com/Al-Zhilin/FinTech_Hack.git"
+          $dir  = "C:\hackathon\ai-service"
+          if (Test-Path $dir) {
+            cd $dir
+            git fetch origin
+            git checkout ai
+            git reset --hard origin/ai
+          } else {
+            git clone -b ai $repo $dir
+          }
+
+      - name: Setup venv if missing
+        shell: powershell
+        run: |
+          cd C:\hackathon\ai-service
+          if (-not (Test-Path ".venv")) { python -m venv .venv }
 
       - name: Install deps
         shell: powershell
         run: |
-          Write-Host "=== INSTALL DEPS ===" -ForegroundColor Cyan
-          C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\.venv\Scripts\Activate.ps1
-          cd C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service
+          cd C:\hackathon\ai-service
+          .\.venv\Scripts\Activate.ps1
           pip install -r requirements.txt
-          Write-Host "Deps OK" -ForegroundColor Green
 
       - name: Restart service
         shell: powershell
         run: |
-          Write-Host "=== RESTART SERVICE ===" -ForegroundColor Cyan
-
-          # Останавливаем старый процесс
-          Write-Host "Stopping old process..."
-          Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force
+          Get-Process -Name python -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "*ai-service*" } | Stop-Process -Force
           Start-Sleep -Seconds 2
 
-          # Пути
-          $venv    = "C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\.venv\Scripts\python.exe"
-          $project = "C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service"
-          $log     = "$project\uvicorn.log"
+          $venv    = "C:\hackathon\ai-service\.venv\Scripts\python.exe"
+          $project = "C:\hackathon\ai-service"
 
-          # Запускаем uvicorn как независимый процесс
-          Write-Host "Starting uvicorn..."
-          $proc = Start-Process `
+          Start-Process `
             -FilePath $venv `
-            -ArgumentList "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001" `
+            -ArgumentList "-m","uvicorn","app.main:app","--host","0.0.0.0","--port","8001" `
             -WorkingDirectory $project `
-            -RedirectStandardOutput $log `
-            -RedirectStandardError "$project\uvicorn_err.log" `
-            -NoNewWindow `
-            -PassThru
+            -RedirectStandardOutput "$project\uvicorn.log" `
+            -RedirectStandardError  "$project\uvicorn_err.log" `
+            -NoNewWindow
 
-          Write-Host "Started PID: $($proc.Id)"
           Start-Sleep -Seconds 5
-          Write-Host "Service started" -ForegroundColor Green
 
       - name: Health check
         shell: powershell
         run: |
-          Write-Host "=== HEALTH CHECK ===" -ForegroundColor Cyan
           try {
             $r = Invoke-WebRequest -Uri "http://localhost:8001/health" -UseBasicParsing
-            Write-Host "Health check OK: $($r.StatusCode)" -ForegroundColor Green
-            Write-Host "Response: $($r.Content)"
             if ($r.StatusCode -ne 200) { exit 1 }
-          } catch {
-            Write-Host "Health check FAILED: $_" -ForegroundColor Red
-            exit 1
-          }
-
-      - name: Debug on failure
-        if: failure()
-        shell: powershell
-        run: |
-          Write-Host "=== DEBUG INFO ===" -ForegroundColor Yellow
-          Write-Host "--- Python processes ---"
-          Get-Process python -ErrorAction SilentlyContinue | Format-Table
-          Write-Host "--- Port 8001 ---"
-          netstat -ano | findstr :8001
-          Write-Host "--- uvicorn.log ---"
-          $log = "C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service\uvicorn.log"
-          if (Test-Path $log) { Get-Content $log -Tail 20 }
-          Write-Host "--- uvicorn_err.log ---"
-          $err = "C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service\uvicorn_err.log"
-          if (Test-Path $err) { Get-Content $err -Tail 20 }
+          } catch { exit 1 }
