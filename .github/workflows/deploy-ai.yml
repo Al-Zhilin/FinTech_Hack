@@ -4,21 +4,31 @@ on:
   push:
     branches: [ai]
 
+env:
+  VENV: "${{ env.USERPROFILE }}\\PycharmProjects\\PythonProject\\.venv\\Scripts\\Activate.ps1"
+  PROJECT: "${{ env.USERPROFILE }}\\PycharmProjects\\PythonProject\\PythonProject\\ai-service"
+
 jobs:
   deploy:
     runs-on: self-hosted
     steps:
+      - name: Set paths
+        shell: powershell
+        run: |
+          echo "VENV=$env:USERPROFILE\PycharmProjects\PythonProject\.venv\Scripts\Activate.ps1" >> $env:GITHUB_ENV
+          echo "PROJECT=$env:USERPROFILE\PycharmProjects\PythonProject\PythonProject\ai-service" >> $env:GITHUB_ENV
+
       - name: Pull code
         shell: powershell
         run: |
-          cd C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service
+          cd $env:PROJECT
           git pull origin ai
 
       - name: Install deps
         shell: powershell
         run: |
-          cd C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service
-          .\.venv\Scripts\Activate.ps1
+          & $env:VENV
+          cd $env:PROJECT
           pip install -r requirements.txt
 
       - name: Restart service
@@ -26,24 +36,24 @@ jobs:
         run: |
           Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force
           Start-Sleep -Seconds 2
-          
+
           $action = New-ScheduledTaskAction `
             -Execute "powershell.exe" `
             -Argument "-NoProfile -WindowStyle Hidden -Command `"
-              cd 'C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service';
-              .\.venv\Scripts\Activate.ps1;
+              & '$env:VENV';
+              cd '$env:PROJECT';
               uvicorn app.main:app --host 0.0.0.0 --port 8001
             `""
-          
+
           $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(3)
-          
+
           Register-ScheduledTask `
             -TaskName "AIService" `
             -Action $action `
             -Trigger $trigger `
             -Force `
             -RunLevel Highest | Out-Null
-          
+
           Start-ScheduledTask -TaskName "AIService"
           Start-Sleep -Seconds 5
 
