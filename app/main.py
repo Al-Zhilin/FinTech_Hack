@@ -27,7 +27,6 @@ def health():
     return {"status": "ok", "ollama": "up" if ollama_ok else "down"}
 
 
-
 @app.post("/ai/process", response_model=AIResponse)
 def process(request: AIRequest) -> AIResponse:
     logger.info(f"[/ai/process] user_id={request.user_id} mode={request.mode} query='{request.query[:80]}'")
