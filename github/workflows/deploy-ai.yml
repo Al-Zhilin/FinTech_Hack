@@ -1,0 +1,38 @@
+name: Deploy AI Service
+
+on:
+  push:
+    branches: [ai]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Pull code
+        shell: powershell
+        run: |
+          cd C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service
+          git pull origin ai
+
+      - name: Install deps
+        shell: powershell
+        run: |
+          cd C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service
+          .\.venv\Scripts\Activate.ps1
+          pip install -r requirements.txt
+
+      - name: Restart service
+        shell: powershell
+        run: |
+          Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 2
+          cd C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service
+          .\.venv\Scripts\Activate.ps1
+          Start-Process python -ArgumentList "-m","uvicorn","app.main:app","--host","0.0.0.0","--port","8001" -WindowStyle Hidden
+
+      - name: Health check
+        shell: powershell
+        run: |
+          Start-Sleep -Seconds 5
+          $r = Invoke-WebRequest -Uri "http://localhost:8001/health" -UseBasicParsing
+          if ($r.StatusCode -ne 200) { exit 1 }
