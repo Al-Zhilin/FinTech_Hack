@@ -26,13 +26,16 @@ jobs:
         shell: powershell
         run: |
           cd C:\hackathon\ai-service
-          if (-not (Test-Path ".venv")) { python -m venv .venv }
+          if (-not (Test-Path ".venv")) {
+            & "C:\Users\Fitle\AppData\Local\Programs\Python\Python311\python.exe" -m venv .venv
+          }
 
       - name: Install deps
         shell: powershell
         run: |
           cd C:\hackathon\ai-service
           .\.venv\Scripts\Activate.ps1
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Restart service
