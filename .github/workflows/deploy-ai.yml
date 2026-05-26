@@ -11,14 +11,14 @@ jobs:
       - name: Pull code
         shell: powershell
         run: |
-          cd C:\Users\Fitle\PycharmProjects\PythonProject\ai-service
+          cd C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service
           git pull origin ai
 
       - name: Install deps
         shell: powershell
         run: |
-          C:\Users\Fitle\PycharmProjects\PythonProject\.venv\Scripts\Activate.ps1
-          cd C:\Users\Fitle\PycharmProjects\PythonProject\ai-service
+          C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\.venv\Scripts\Activate.ps1
+          cd C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service
           pip install -r requirements.txt
 
       - name: Restart service
@@ -30,8 +30,8 @@ jobs:
           $action = New-ScheduledTaskAction `
             -Execute "powershell.exe" `
             -Argument "-NoProfile -WindowStyle Hidden -Command `"
-              C:\Users\Fitle\PycharmProjects\PythonProject\.venv\Scripts\Activate.ps1;
-              cd 'C:\Users\Fitle\PycharmProjects\PythonProject\ai-service';
+              C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\.venv\Scripts\Activate.ps1;
+              cd 'C:\Users\Fitle\PycharmProjects\PythonProject\PythonProject\ai-service';
               uvicorn app.main:app --host 0.0.0.0 --port 8001
             `""
 
