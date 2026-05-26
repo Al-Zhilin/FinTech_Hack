@@ -1,0 +1,495 @@
+{
+  "timestamp": "2026-05-24T23:02:13.402933",
+  "total": 13,
+  "passed": 10,
+  "results": [
+    {
+      "name": "health — сервис живой",
+      "group": "smoke",
+      "passed": true,
+      "failures": [],
+      "elapsed": 2.46,
+      "status_code": 200,
+      "response": {
+        "status": "ok",
+        "ollama": "up"
+      },
+      "error": null,
+      "meta": {},
+      "expected": {
+        "status": "ok"
+      },
+      "request_body": {}
+    },
+    {
+      "name": "базовый вопрос без профиля",
+      "group": "smoke",
+      "passed": true,
+      "failures": [],
+      "elapsed": 11.46,
+      "status_code": 200,
+      "response": {
+        "text": "Диверсификация портфеля - это стратегия, при которой инвестор распределяет свои инвестиции по различным видам активов (например, акции, облигации, недвижимость) и отраслям для разнообразия рисков. Это помогает снизить общую степень риска портфеля без ущерба для доходности.",
+        "structured": {
+          "summary": "Диверсификация портфеля - это стратегия распределения инвестиций по различным видам активов и отраслям для снижения рисков.",
+          "recommendations": [],
+          "risks": []
+        },
+        "sources": [],
+        "intent": "advice",
+        "error": null
+      },
+      "error": null,
+      "meta": {},
+      "expected": {
+        "keywords": [
+          "портфель",
+          "риск",
+          "активы",
+          "диверсификация"
+        ],
+        "has_structured": true
+      },
+      "request_body": {
+        "user_id": "test-001",
+        "query": "Что такое диверсификация портфеля?",
+        "context": {
+          "history": [],
+          "user_profile": {}
+        },
+        "mode": "chat"
+      }
+    },
+    {
+      "name": "пустая строка",
+      "group": "robustness",
+      "passed": true,
+      "failures": [],
+      "elapsed": 73.37,
+      "status_code": 200,
+      "response": {
+        "text": "Динамика стоимости доллара США в рублях за последний месяц показывает увеличение курса. В начале месяца 1 USD стоил 70,8032 RUB, а к концу месяца — 71,5500 RUB. Это означает рост на 1,49%. Текущий курс USD/RUB составляет 71,5500, что соответствует уровню закрытия предыдущего дня.",
+        "structured": {
+          "summary": "Курс доллара США к рублю увеличился за месяц на 1,49% до 71,5500 RUB за 1 USD. Текущий курс составляет 71,5500 RUB за 1 USD.",
+          "recommendations": [
+            "Отслеживайте динамику курса валют для принятия обоснованных решений в отношении инвестиций и финансов."
+          ],
+          "risks": [
+            "Риск колебаний курса валют может повлиять на стоимость активов и доходность инвестирования."
+          ]
+        },
+        "sources": [
+          "https://www.banki.ru/products/currency/usd",
+          "https://ru.investing.com/currencies/usd-rub",
+          "https://bcs-express.ru/kotirovki-i-grafiki/usd_rub",
+          "https://finance.mail.ru/currency/cbrf/usd",
+          "https://www.cbr.ru/currency_base/daily"
+        ],
+        "intent": "question",
+        "error": null
+      },
+      "error": null,
+      "meta": {},
+      "expected": {
+        "not_empty_text": true
+      },
+      "request_body": {
+        "user_id": "test_robust",
+        "query": "",
+        "context": {
+          "history": [],
+          "user_profile": {}
+        },
+        "mode": "chat"
+      }
+    },
+    {
+      "name": "бессмыслица (asdfghjkl)",
+      "group": "robustness",
+      "passed": true,
+      "failures": [],
+      "elapsed": 9.31,
+      "status_code": 200,
+      "response": {
+        "text": "Введите, пожалуйста, свой вопрос.",
+        "structured": {
+          "summary": "Пользователь задал непонятное сообщение.",
+          "recommendations": [
+            "Уточните свой вопрос."
+          ],
+          "risks": []
+        },
+        "sources": [],
+        "intent": "question",
+        "error": null
+      },
+      "error": null,
+      "meta": {},
+      "expected": {
+        "not_empty_text": true
+      },
+      "request_body": {
+        "user_id": "test_robust",
+        "query": "asdfghjkl",
+        "context": {
+          "history": [],
+          "user_profile": {}
+        },
+        "mode": "chat"
+      }
+    },
+    {
+      "name": "очень длинный запрос (1000+ символов)",
+      "group": "robustness",
+      "passed": true,
+      "failures": [],
+      "elapsed": 81.54,
+      "status_code": 200,
+      "response": {
+        "text": "Динамика стоимости доллара США в рублях показывает увеличение курса с начала месяца до конца. На 23 апреля 2026 года курс составил 73,31 руб., что на 1,49% выше, чем в начале месяца.",
+        "structured": {
+          "summary": "Курс доллара США к российскому рублю увеличился с начала месяца до конца на 1,49%",
+          "recommendations": [
+            "Отслеживайте динамику курса валют для принятия обоснованных решений о покупке или продаже"
+          ],
+          "risks": [
+            "Риски изменения курса могут повлиять на стоимость активов"
+          ]
+        },
+        "sources": [
+          "https://www.banki.ru/products/currency/usd",
+          "https://ru.investing.com/currencies/usd-rub",
+          "https://bcs-express.ru/kotirovki-i-grafiki/usd_rub",
+          "https://finance.mail.ru/currency/cbrf/usd",
+          "https://www.cbr.ru/currency_base/daily"
+        ],
+        "intent": "question",
+        "error": null
+      },
+      "error": null,
+      "meta": {},
+      "expected": {
+        "not_empty_text": true
+      },
+      "request_body": {
+        "user_id": "test_robust",
+        "query": "lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet ",
+        "context": {
+          "history": [],
+          "user_profile": {}
+        },
+        "mode": "chat"
+      }
+    },
+    {
+      "name": "emoji вперемешку",
+      "group": "robustness",
+      "passed": true,
+      "failures": [],
+      "elapsed": 70.89,
+      "status_code": 200,
+      "response": {
+        "text": "Сегодня 1 BTC стоит примерно 5,465,351.65 RUB по актуальному курсу на Binance и других биржах.",
+        "structured": {
+          "summary": "Стоимость 1 BTC в рублях составляет около 5,465,351.65 RUB.",
+          "recommendations": [
+            "Используйте калькулятор для точного расчета при конвертации"
+          ],
+          "risks": [
+            "Курсы криптовалют могут сильно колебаться"
+          ]
+        },
+        "sources": [
+          "https://www.binance.com/ru/price/bitcoin/RUB",
+          "https://1000bankov.ru/kurs/btc",
+          "https://bankiros.ru/crypto/bitcoin",
+          "https://yandex.ru/finance/crypto/BTC_RUB",
+          "https://www.rbc.ru/crypto/currency/btcrub"
+        ],
+        "intent": "question",
+        "error": null
+      },
+      "error": null,
+      "meta": {},
+      "expected": {
+        "not_empty_text": true
+      },
+      "request_body": {
+        "user_id": "test_robust",
+        "query": "💰 Сколько 🤔 стоит 📈 биткоин сегодня?? 🚀",
+        "context": {
+          "history": [],
+          "user_profile": {}
+        },
+        "mode": "chat"
+      }
+    },
+    {
+      "name": "английский запрос",
+      "group": "robustness",
+      "passed": true,
+      "failures": [],
+      "elapsed": 79.24,
+      "status_code": 200,
+      "response": {
+        "text": "Текущий курс EUR/USD не указан в предоставленных данных.",
+        "structured": {
+          "summary": "В提供的数据中没有提到欧元兑美元的当前汇率。",
+          "recommendations": [],
+          "risks": []
+        },
+        "sources": [
+          "https://www.banki.ru/products/currency/usd",
+          "https://ru.investing.com/currencies/usd-rub",
+          "https://bcs-express.ru/kotirovki-i-grafiki/usd_rub",
+          "https://finance.mail.ru/currency/cbrf/usd",
+          "https://www.cbr.ru/currency_base/daily"
+        ],
+        "intent": "question",
+        "error": null
+      },
+      "error": null,
+      "meta": {},
+      "expected": {
+        "not_empty_text": true
+      },
+      "request_body": {
+        "user_id": "test_robust",
+        "query": "What is the current EUR/USD exchange rate?",
+        "context": {
+          "history": [],
+          "user_profile": {}
+        },
+        "mode": "chat"
+      }
+    },
+    {
+      "name": "CAPS + лишняя пунктуация",
+      "group": "robustness",
+      "passed": true,
+      "failures": [],
+      "elapsed": 10.27,
+      "status_code": 200,
+      "response": {
+        "text": "Инфляция - это процесс повышения уровня цен на товары и услуги, что приводит к уменьшению покупательной способности денег. При инфляции рубль становится менее ценным по сравнению с другими валютами.",
+        "structured": {
+          "summary": "Инфляция - это рост цен на товары и услуги, что снижает покупательную способность денег.",
+          "recommendations": [],
+          "risks": []
+        },
+        "sources": [],
+        "intent": "question",
+        "error": null
+      },
+      "error": null,
+      "meta": {},
+      "expected": {
+        "not_empty_text": true
+      },
+      "request_body": {
+        "user_id": "test_robust",
+        "query": "ЧТО ТАКОЕ ИНФЛЯЦИЯ?!?!?!?!",
+        "context": {
+          "history": [],
+          "user_profile": {}
+        },
+        "mode": "chat"
+      }
+    },
+    {
+      "name": "ETF — что такое?",
+      "group": "planner_classification",
+      "passed": false,
+      "failures": [
+        "intent: got 'advice', want 'question'"
+      ],
+      "elapsed": 11.24,
+      "status_code": 200,
+      "response": {
+        "text": "ETF - это облигационный или акционный фонд, который отслеживает значение определенного индекса. Например, ETF может быть связан с S&P 500, следуя его движению. Они могут покупаться и продаваться как обычная акция на бирже.",
+        "structured": {
+          "summary": "ETF - это фонд, который отслеживает значение определенного индекса и можно торговать как акции.",
+          "recommendations": [
+            "Рассмотрите ETF для входа в рынок с небольшими инвестициями."
+          ],
+          "risks": [
+            "ETF могут иметь высокую комиссию за сделку."
+          ]
+        },
+        "sources": [],
+        "intent": "advice",
+        "error": null
+      },
+      "error": null,
+      "meta": {
+        "expected_search": false
+      },
+      "expected": {
+        "intent": "question"
+      },
+      "request_body": {
+        "user_id": "test_planner",
+        "query": "Что такое ETF?",
+        "context": {
+          "history": [],
+          "user_profile": {}
+        },
+        "mode": "chat"
+      }
+    },
+    {
+      "name": "курс доллара — актуальный вопрос",
+      "group": "planner_classification",
+      "passed": false,
+      "failures": [
+        "intent: got 'question', want 'analysis'"
+      ],
+      "elapsed": 80.25,
+      "status_code": 200,
+      "response": {
+        "text": "Текущий курс доллара США к рублю составляет 71.5500 рублей за один доллар, что было установлено Центральным банком Российской Федерации на 23 мая 2026 года.",
+        "structured": {
+          "summary": "Сегодняшний курс доллара США к российскому рублю составляет 71.5500 рублей.",
+          "recommendations": [],
+          "risks": []
+        },
+        "sources": [
+          "https://www.banki.ru/products/currency/usd",
+          "https://ru.investing.com/currencies/usd-rub",
+          "https://bcs-express.ru/kotirovki-i-grafiki/usd_rub",
+          "https://finance.mail.ru/currency/cbrf/usd",
+          "https://www.cbr.ru/currency_base/daily"
+        ],
+        "intent": "question",
+        "error": null
+      },
+      "error": null,
+      "meta": {
+        "expected_search": true
+      },
+      "expected": {
+        "intent": "analysis"
+      },
+      "request_body": {
+        "user_id": "test_planner",
+        "query": "Какой сейчас курс доллара?",
+        "context": {
+          "history": [],
+          "user_profile": {}
+        },
+        "mode": "chat"
+      }
+    },
+    {
+      "name": "трата — action-запрос",
+      "group": "planner_classification",
+      "passed": true,
+      "failures": [],
+      "elapsed": 9.99,
+      "status_code": 200,
+      "response": {
+        "text": "Трату 500 рублей добавлено на категорию «еда». Теперь необходимо уточнить месяц и год транзакции для полной записи.",
+        "structured": {
+          "summary": "Добавлена транзакция в размере 500 рублей на категорию «еда».",
+          "recommendations": [],
+          "risks": []
+        },
+        "sources": [],
+        "intent": "action",
+        "error": null
+      },
+      "error": null,
+      "meta": {
+        "expected_search": false
+      },
+      "expected": {
+        "intent": "action"
+      },
+      "request_body": {
+        "user_id": "test_planner",
+        "query": "Добавь трату 500 рублей на еду",
+        "context": {
+          "history": [],
+          "user_profile": {}
+        },
+        "mode": "chat"
+      }
+    },
+    {
+      "name": "ипотека — advice-запрос",
+      "group": "planner_classification",
+      "passed": false,
+      "failures": [
+        "intent: got 'question', want 'advice'"
+      ],
+      "elapsed": 12.53,
+      "status_code": 200,
+      "response": {
+        "text": "Для принятия решения стоит рассмотреть несколько факторов. Если ваш доход составляет, например, 300 000 рублей в месяц и вы планируете ежемесячные выплаты по ипотеке не более 40% от зарплаты (120 000 рублей), то это может быть разумным выбором. Однако важно учитывать, что процентная ставка 15% значительно выше средней по рынку, которая обычно составляет около 7-9%. Это увеличивает общую стоимость кредита и риски для вашего бюджета.",
+        "structured": {
+          "summary": "Рассмотрите возможность взять ипотеку с учетом высокой процентной ставки. Стоимость кредита может быть значительной.",
+          "recommendations": [
+            "Проверьте свои финансовые возможности перед принятием решения"
+          ],
+          "risks": [
+            "Высокая процентная ставка"
+          ]
+        },
+        "sources": [],
+        "intent": "question",
+        "error": null
+      },
+      "error": null,
+      "meta": {
+        "expected_search": null
+      },
+      "expected": {
+        "intent": "advice"
+      },
+      "request_body": {
+        "user_id": "test_planner",
+        "query": "Стоит ли мне взять ипотеку под 15%?",
+        "context": {
+          "history": [],
+          "user_profile": {}
+        },
+        "mode": "chat"
+      }
+    },
+    {
+      "name": "привет — casual",
+      "group": "planner_classification",
+      "passed": true,
+      "failures": [],
+      "elapsed": 9.17,
+      "status_code": 200,
+      "response": {
+        "text": "Здравствуйте! Я хорошо, а как у вас?",
+        "structured": {
+          "summary": "Приветствие",
+          "recommendations": [],
+          "risks": []
+        },
+        "sources": [],
+        "intent": "casual",
+        "error": null
+      },
+      "error": null,
+      "meta": {
+        "expected_search": false
+      },
+      "expected": {
+        "intent": "casual"
+      },
+      "request_body": {
+        "user_id": "test_planner",
+        "query": "Привет, как дела?",
+        "context": {
+          "history": [],
+          "user_profile": {}
+        },
+        "mode": "chat"
+      }
+    }
+  ]
+}

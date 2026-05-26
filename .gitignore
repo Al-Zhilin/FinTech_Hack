@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.py[cod]
+.venv/
+
+# Модели — тяжёлые файлы, не коммитим
+models/*.gguf
+models/*.bin
