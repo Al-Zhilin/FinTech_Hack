@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Clone or pull
         run: |
-          REPO="https://github.com/Al-Zhilin/FinTech_Hack.git"
+          REPO="https://github.com/AnywayHack/FinTech_Hack.git"
           DIR="$HOME/hackathon/backend"
           if [ -d "$DIR/.git" ]; then
             cd "$DIR"
