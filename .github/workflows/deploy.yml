@@ -35,14 +35,14 @@ jobs:
 
       - name: Stop old service
         run: |
-          pkill -f "uvicorn app.main:app.*8000" || true
+          pkill -f "uvicorn app.main:app.*8001" || true
           sleep 2
 
       - name: Start service
         run: |
           cd "$HOME/hackathon/backend"
           source "$HOME/hackathon/.venv/bin/activate"
-          nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 \
+          nohup uvicorn app.main:app --host 0.0.0.0 --port 8001 \
             > "$HOME/hackathon/backend/uvicorn.log" \
             2> "$HOME/hackathon/backend/uvicorn_err.log" &
           disown
@@ -50,5 +50,5 @@ jobs:
 
       - name: Health check
         run: |
-          curl -fsS http://localhost:8000/health || exit 1
+          curl -fsS http://localhost:8001/health || exit 1
           echo "Backend is healthy"
