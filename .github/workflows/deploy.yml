@@ -1,0 +1,54 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [back]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Clone or pull
+        run: |
+          REPO="https://github.com/Al-Zhilin/FinTech_Hack.git"
+          DIR="$HOME/hackathon/backend"
+          if [ -d "$DIR/.git" ]; then
+            cd "$DIR"
+            git fetch origin
+            git checkout back
+            git reset --hard origin/back
+          else
+            git clone -b back "$REPO" "$DIR"
+          fi
+
+      - name: Setup venv if missing
+        run: |
+          if [ ! -d "$HOME/hackathon/.venv" ]; then
+            python3.11 -m venv "$HOME/hackathon/.venv"
+          fi
+
+      - name: Install deps
+        run: |
+          source "$HOME/hackathon/.venv/bin/activate"
+          pip install --upgrade pip
+          pip install -r "$HOME/hackathon/backend/requirements.txt"
+
+      - name: Stop old service
+        run: |
+          pkill -f "uvicorn app.main:app.*8000" || true
+          sleep 2
+
+      - name: Start service
+        run: |
+          cd "$HOME/hackathon/backend"
+          source "$HOME/hackathon/.venv/bin/activate"
+          nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 \
+            > "$HOME/hackathon/backend/uvicorn.log" \
+            2> "$HOME/hackathon/backend/uvicorn_err.log" &
+          disown
+          sleep 5
+
+      - name: Health check
+        run: |
+          curl -fsS http://localhost:8000/health || exit 1
+          echo "Backend is healthy"
