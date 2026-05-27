@@ -9,58 +9,46 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Clone or pull
-        shell: powershell
         run: |
-          $repo = "https://github.com/Al-Zhilin/FinTech_Hack.git"
-          $dir  = "C:\hackathon\ai-service"
-          if (Test-Path $dir) {
-            cd $dir
+          REPO="https://github.com/Al-Zhilin/FinTech_Hack.git"
+          DIR="$HOME/hackathon/ai-service"
+          if [ -d "$DIR/.git" ]; then
+            cd "$DIR"
             git fetch origin
             git checkout ai
             git reset --hard origin/ai
-          } else {
-            git clone -b ai $repo $dir
-          }
+          else
+            git clone -b ai "$REPO" "$DIR"
+          fi
 
       - name: Setup venv if missing
-        shell: powershell
         run: |
-          cd C:\hackathon\ai-service
-          if (-not (Test-Path ".venv")) {
-            & "C:\Users\Fitle\AppData\Local\Programs\Python\Python311\python.exe" -m venv .venv
-          }
+          if [ ! -d "$HOME/hackathon/.venv" ]; then
+            python3.11 -m venv "$HOME/hackathon/.venv"
+          fi
 
       - name: Install deps
-        shell: powershell
         run: |
-          cd C:\hackathon\ai-service
-          .\.venv\Scripts\Activate.ps1
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          source "$HOME/hackathon/.venv/bin/activate"
+          pip install --upgrade pip
+          pip install -r "$HOME/hackathon/ai-service/requirements.txt"
 
-      - name: Restart service
-        shell: powershell
+      - name: Stop old service
         run: |
-          Get-Process -Name python -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "*ai-service*" } | Stop-Process -Force
-          Start-Sleep -Seconds 2
+          pkill -f "uvicorn app.main:app.*8001" || true
+          sleep 2
 
-          $venv    = "C:\hackathon\ai-service\.venv\Scripts\python.exe"
-          $project = "C:\hackathon\ai-service"
-
-          Start-Process `
-            -FilePath $venv `
-            -ArgumentList "-m","uvicorn","app.main:app","--host","0.0.0.0","--port","8001" `
-            -WorkingDirectory $project `
-            -RedirectStandardOutput "$project\uvicorn.log" `
-            -RedirectStandardError  "$project\uvicorn_err.log" `
-            -NoNewWindow
-
-          Start-Sleep -Seconds 5
+      - name: Start service
+        run: |
+          cd "$HOME/hackathon/ai-service"
+          source "$HOME/hackathon/.venv/bin/activate"
+          nohup uvicorn app.main:app --host 0.0.0.0 --port 8001 \
+            > "$HOME/hackathon/ai-service/uvicorn.log" \
+            2> "$HOME/hackathon/ai-service/uvicorn_err.log" &
+          disown
+          sleep 5
 
       - name: Health check
-        shell: powershell
         run: |
-          try {
-            $r = Invoke-WebRequest -Uri "http://localhost:8001/health" -UseBasicParsing
-            if ($r.StatusCode -ne 200) { exit 1 }
-          } catch { exit 1 }
+          curl -fsS http://localhost:8001/health || exit 1
+          echo "AI Service is healthy"
