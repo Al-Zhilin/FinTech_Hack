@@ -11,7 +11,7 @@ export default defineConfig({
       plugins: [tailwindcss, autoprefixer],
     },
   },
-  base: '/ekvator/',
+  base: '/',
   plugins: [
     react(),
     VitePWA({
