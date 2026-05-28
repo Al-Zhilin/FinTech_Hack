@@ -1,0 +1,55 @@
+@use './helpers/' as *;
+
+body {
+  font-family: var(--font-primary);
+  font-size: 1rem;
+}
+
+.app-shell {
+  display: flex;
+  overflow: hidden;
+}
+
+.home,
+.booking {
+  flex: 1;
+  padding-left: 4rem;
+
+  @include mobile {
+    padding-left: 5.3125rem;
+  }
+
+  @include mobile-s {
+    padding-left: 0;
+  }
+}
+
+a {
+  text-decoration: none;
+}
+
+.container-hero-content {
+  max-width: var(--container-hero-content);
+  padding-inline: 2rem;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+
+  @include mobile {
+    padding-inline: 1rem;
+    max-width: 40.75rem;
+  }
+
+  @include mobile-s {
+    padding-inline: 0rem;
+  }
+
+  .hero-content {
+    flex: 1;
+
+    @include mobile-s {
+      margin-top: 2.5rem;
+    }
+  }
+}

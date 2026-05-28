@@ -1,0 +1,170 @@
+@use './helpers/' as *;
+
+// :root {
+//   --color-light: #f3f3f3;
+//   --color-black: #121212;
+//   --color-gray-s: #eeeeee;
+//   --color-gray-m: #999999;
+//   --color-accent: #0ec261;
+//   --color-danger: #6e1212;
+
+//   --gradient-button-hero: linear-gradient(90deg, #0ec261 2.61%, #039f67 112.6%);
+//   --gradient-button-one: linear-gradient(90deg, #13493f 0%, #0c7b1b 100%);
+//   --gradient-button-two: linear-gradient(90deg, #132949 0%, #0c7b67 100%);
+//   --gradient-button-three: linear-gradient(90deg, #493013 0%, #7b0c3b 100%);
+//   --gradient-button-four: linear-gradient(90deg, #281349 0%, #720c7b 100%);
+
+//   --transition: all 0.3s ease;
+//   --border: .0625rem solid var(--color-gray-s);
+
+//   --font-family: 'Roboto', sans-serif;
+
+//   --container-hero-content: #{rem(620)};
+//   --container-width: #{rem(1500)};
+//   --container-padding-x: #{rem(16)};
+
+//   --transition-duration: 0.2s all ease;
+// }
+
+
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --font-primary: 'Montserrat', sans-serif;
+
+  // --- Base / Background ---
+  --color-bg-base: #0A0A12; // Почти чёрный с синим оттенком — основной фон
+  --color-bg-surface: #12121E; // Карточки, панели
+  --color-bg-elevated: #1A1A2E; // Поднятые элементы (модалки, шапки)
+  --color-bg-overlay: rgba(10, 10, 18, 0.85); // Оверлеи
+
+  // --- Secondary Accent (зелёный — позитив, доход, прогресс) ---
+  --color-accent: #83AB38;
+
+  // --- Warning (жёлтый — предупреждения, лимиты близко) ---
+  --color-warning: #FBBF24;
+
+  // --- Danger (красный — перерасход, ошибки) ---
+  --color-danger: #F87171;
+
+  // --- Neutral (текст, разделители) ---
+  --color-neutral-0: #FFFFFF;
+  --color-neutral-100: #F4F4F8;
+  --color-neutral-200: #E2E2EC;
+  --color-neutral-400: #9898B0; // Вторичный текст
+  --color-neutral-500: #6B6B85; // Подсказки, плейсхолдеры
+  --color-neutral-600: #44445A; // Разделители
+  --color-neutral-700: #2E2E42; // Границы карточек
+  --color-neutral-800: #1E1E30; // Фон инпутов
+
+  // --- Category Colors (цвета категорий расходов) ---
+  --color-cat-food: #FF6B6B;
+  --color-cat-transport: #4ECDC4;
+  --color-cat-shopping: #FFE66D;
+  --color-cat-health: #95E1D3;
+  --color-cat-entertainment: #F38181;
+  --color-cat-housing: #6C63FF;
+  --color-cat-education: #A8E6CF;
+  --color-cat-other: #9898B0;
+
+  // --- Gradients ---
+  --gradient-primary: linear-gradient(135deg, #6C63FF 0%, #A594FF 100%);
+  --gradient-success: linear-gradient(135deg, #10B981 0%, #6EE7B7 100%);
+  --gradient-hero: linear-gradient(135deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%);
+  --gradient-card: linear-gradient(135deg, rgba(108, 99, 255, 0.15) 0%, rgba(165, 148, 255, 0.05) 100%);
+  --gradient-danger: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
+
+  // --- Glow Effects ---
+  --glow-primary: 0 0 20px rgba(108, 99, 255, 0.4);
+  --glow-success: 0 0 20px rgba(16, 185, 129, 0.4);
+  --glow-sm: 0 0 10px rgba(108, 99, 255, 0.2);
+
+  // ------------------------------------------------------------
+  // SPACING
+  // База: 4px, шкала кратная 4
+  // ------------------------------------------------------------
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  // --- Semantic Spacing ---
+  --gap-xs: var(--space-1); // 4px
+  --gap-sm: var(--space-2); // 8px
+  --gap-md: var(--space-4); // 16px
+  --gap-lg: var(--space-6); // 24px
+  --gap-xl: var(--space-8); // 32px
+
+  --padding-page: var(--space-5); // 20px — горизонтальные отступы страницы
+  --padding-card: var(--space-5); // 20px — внутренние отступы карточек
+  --padding-button: var(--space-4) var(--space-6); // кнопки
+
+  // ------------------------------------------------------------
+  // BORDER RADIUS
+  // ------------------------------------------------------------
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+  --radius-full: 9999px; // Таблетки, аватары
+
+  // --- Semantic Radius ---
+  --radius-card: var(--radius-xl); // Карточки
+  --radius-button: var(--radius-full); // Кнопки — таблетки
+  --radius-input: var(--radius-md); // Инпуты
+  --radius-modal: var(--radius-2xl); // Модалки (bottom sheet)
+  --radius-badge: var(--radius-sm); // Бейджи
+
+  // ------------------------------------------------------------
+  // SHADOWS
+  // ------------------------------------------------------------
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(108, 99, 255, 0.1);
+
+  // ------------------------------------------------------------
+  // BORDERS
+  // ------------------------------------------------------------
+  --border-color: rgba(255, 255, 255, 0.07);
+  --border-color-accent: rgba(108, 99, 255, 0.3);
+  --border-width: 1px;
+  --border-default: var(--border-width) solid var(--border-color);
+  --border-accent: var(--border-width) solid var(--border-color-accent);
+
+  // ------------------------------------------------------------
+  // TRANSITIONS
+  // ------------------------------------------------------------
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1); // spring-эффект
+
+  // ------------------------------------------------------------
+  // Z-INDEX LAYERS
+  // ------------------------------------------------------------
+  --z-base: 0;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 300;
+  --z-overlay: 400;
+  --z-toast: 500;
+
+  // ------------------------------------------------------------
+  // LAYOUT
+  // ------------------------------------------------------------
+  --bottom-nav-height: 68px; // Высота нижней навигации
+  --page-max-width: 430px; // Максимальная ширина (мобильный frame)
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px); // iPhone notch
+}

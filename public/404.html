@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ФинКомпаньон</title>
+    <script>
+      // SPA redirect trick for GitHub Pages
+      // When a user navigates directly to a sub-path, GitHub returns 404.
+      // This page catches that, encodes the path into a query param,
+      // and redirects to the root — where React Router takes over.
+      var l = window.location;
+      l.replace(
+        l.protocol + '//' + l.host + l.pathname.split('/').slice(0, 2).join('/') +
+        '/?p=' + encodeURIComponent(l.pathname.slice(1) + l.search) + l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>
