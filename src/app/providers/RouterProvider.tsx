@@ -50,6 +50,6 @@ const router = createBrowserRouter([
     path: '*',
     element: <Navigate to="/" replace />,
   },
-], { basename: '/ekvator' });
+], { basename: '/' });
 
 export const RouterProvider = () => <BaseRouterProvider router={router} />;
