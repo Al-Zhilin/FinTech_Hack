@@ -58,7 +58,7 @@ export const OnboardingPage = () => {
 
   const handleFinish = () => {
     const user: User = {
-      id: crypto.randomUUID(),
+      id: (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36)),
       name: form.name.trim(),
       income: Number(form.income.replace(/\D/g, '')),
       goal: form.goal as FinancialGoal,
