@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: back
-
+ 
       - name: Write .env
         env:
           ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
