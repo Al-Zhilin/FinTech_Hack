@@ -1,8 +1,10 @@
+import json
 from datetime import datetime, timezone
 from uuid import uuid4
 
 import httpx
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 
 from app.core.config import settings
 from app.core.database import get_db
@@ -32,76 +34,58 @@ def _map_ai_profile_to_user_profile(ai_profile: dict) -> dict:
     }
 
 
-@router.post("/step", response_model=OnboardingResponse, summary="Onboarding step")
-async def onboarding_step(request: OnboardingRequest) -> OnboardingResponse:
-    db = get_db()
-
-    user = await db.users.find_one({"login": request.login})
+async def _get_or_create_user(db, login: str) -> dict:
+    user = await db.users.find_one({"login": login})
     if user is None:
         user = {
-            "login": request.login,
+            "login": login,
             "ai_user_id": str(uuid4()),
             "profile": {},
             "onboarding_complete": False,
             "created_at": datetime.now(timezone.utc),
         }
         await db.users.insert_one(user)
+    return user
 
-    ai_user_id: str = user["ai_user_id"]
 
-    # Берём историю ДО текущего сообщения
+async def _get_history(db, login: str) -> list[dict]:
     cursor = (
-        db.messages.find({"login": request.login})
+        db.messages.find({"login": login})
         .sort("created_at", -1)
         .limit(_HISTORY_LIMIT)
     )
     previous = await cursor.to_list(length=_HISTORY_LIMIT)
     previous.reverse()
+    return [{"role": msg["role"], "content": msg["content"]} for msg in previous]
 
-    history = [{"role": msg["role"], "content": msg["content"]} for msg in previous]
 
-    # Сохраняем сообщение пользователя
-    await db.messages.insert_one(
-        {
-            "login": request.login,
-            "role": "user",
-            "content": request.message,
-            "created_at": datetime.now(timezone.utc),
-        }
-    )
-
+async def _call_ai_onboarding(ai_user_id: str, message: str, history: list) -> dict:
+    payload = {
+        "user_id": ai_user_id,
+        "message": message,
+        "history": history,
+    }
     try:
         async with httpx.AsyncClient(verify=settings.httpx_verify, timeout=60.0, trust_env=False) as client:
-            response = await client.post(
-                f"{settings.AI_SERVICE_URL}/ai/onboarding",
-                json={
-                    "user_id": ai_user_id,
-                    "message": request.message,
-                    "history": history,
-                },
-            )
+            response = await client.post(f"{settings.AI_SERVICE_URL}/ai/onboarding", json=payload)
             response.raise_for_status()
-            ai_data: dict = response.json()
+            return response.json()
     except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"AI service error: {exc}")
+        raise HTTPException(status_code=502, detail=f"AI service error: {type(exc).__name__}: {exc}")
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Unexpected error: {exc}")
+        raise HTTPException(status_code=502, detail=f"Unexpected error: {type(exc).__name__}: {exc}")
 
-    # Сохраняем ответ AI (вопрос онбординга) в историю
+
+async def _persist_ai_response(db, login: str, ai_user_id: str, ai_data: dict) -> None:
     if ai_data.get("question"):
-        await db.messages.insert_one(
-            {
-                "login": request.login,
-                "role": "assistant",
-                "content": ai_data["question"],
-                "created_at": datetime.now(timezone.utc),
-            }
-        )
-
+        await db.messages.insert_one({
+            "login": login,
+            "role": "assistant",
+            "content": ai_data["question"],
+            "created_at": datetime.now(timezone.utc),
+        })
     if ai_data.get("complete"):
-        await _save_profile(db, request.login, ai_user_id)
-
-    return OnboardingResponse(**ai_data)
+        await _save_profile(db, login, ai_user_id)
 
 
 async def _save_profile(db, login: str, ai_user_id: str) -> None:
@@ -124,3 +108,51 @@ async def _save_profile(db, login: str, ai_user_id: str) -> None:
         {"login": login},
         {"$set": {"profile": user_profile, "onboarding_complete": True}},
     )
+
+
+@router.post("/step", response_model=OnboardingResponse, summary="Onboarding step")
+async def onboarding_step(request: OnboardingRequest) -> OnboardingResponse:
+    db = get_db()
+    user = await _get_or_create_user(db, request.login)
+    ai_user_id: str = user["ai_user_id"]
+    history = await _get_history(db, request.login)
+
+    await db.messages.insert_one({
+        "login": request.login,
+        "role": "user",
+        "content": request.message,
+        "created_at": datetime.now(timezone.utc),
+    })
+
+    ai_data = await _call_ai_onboarding(ai_user_id, request.message, history)
+    await _persist_ai_response(db, request.login, ai_user_id, ai_data)
+    return OnboardingResponse(**ai_data)
+
+
+@router.post("/stream", summary="Onboarding step with SSE streaming")
+async def stream_onboarding_step(request: OnboardingRequest) -> StreamingResponse:
+    db = get_db()
+    user = await _get_or_create_user(db, request.login)
+    ai_user_id: str = user["ai_user_id"]
+    history = await _get_history(db, request.login)
+
+    await db.messages.insert_one({
+        "login": request.login,
+        "role": "user",
+        "content": request.message,
+        "created_at": datetime.now(timezone.utc),
+    })
+
+    async def generate():
+        yield f"event: status\ndata: {json.dumps({'status': 'processing', 'message': 'Обрабатываем ответ...'}, ensure_ascii=False)}\n\n"
+
+        try:
+            ai_data = await _call_ai_onboarding(ai_user_id, request.message, history)
+        except HTTPException as exc:
+            yield f"event: error\ndata: {json.dumps({'error': exc.detail})}\n\n"
+            return
+
+        await _persist_ai_response(db, request.login, ai_user_id, ai_data)
+        yield f"event: result\ndata: {json.dumps(ai_data, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
