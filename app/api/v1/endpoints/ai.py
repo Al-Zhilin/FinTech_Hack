@@ -14,9 +14,9 @@ async def ai_health():
             response.raise_for_status()
             data = response.json()
     except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"AI service unreachable: {exc}")
+        raise HTTPException(status_code=502, detail=f"AI service unreachable: {type(exc).__name__}: {exc}")
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Unexpected error: {exc}")
+        raise HTTPException(status_code=502, detail=f"Unexpected error: {type(exc).__name__}: {exc}")
 
     if data.get("status") != "ok":
         raise HTTPException(status_code=502, detail=f"AI service returned unexpected status: {data}")
