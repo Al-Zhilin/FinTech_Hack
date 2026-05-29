@@ -170,6 +170,24 @@ export interface BankOffer {
   paymentToIncome: number;   // ratio 0–1
 }
 
+// ─── Transactions ────────────────────────────────────────────────────────────
+
+export type TxType = 'income' | 'expense';
+export type TxMethod = 'card' | 'cash';
+
+export interface Transaction {
+  id: string;
+  type: TxType;
+  amount: number;            // положительное число
+  category: string;          // ExpenseCategory для расхода, income-категория для дохода
+  title: string;
+  merchant?: string;
+  date: string;              // ISO
+  method: TxMethod;
+}
+
+export type FinancePeriod = 'day' | 'week' | 'month' | 'year' | 'custom';
+
 // ─── Chat Types ────────────────────────────────────────────────────────────────
 
 export type MessageRole = 'user' | 'ai';

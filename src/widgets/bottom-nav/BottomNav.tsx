@@ -3,7 +3,7 @@ import { cn } from '@/shared/lib/cn';
 
 const NAV_ITEMS = [
   { to: '/dashboard', icon: HomeIcon,      label: 'Главная' },
-  { to: '/analytics', icon: ChartIcon,     label: 'Аналитика' },
+  { to: '/finance',   icon: WalletIcon,    label: 'Финансы' },
   { to: '/chat',      icon: AiIcon,        label: 'AI',        highlight: true },
   { to: '/goals',     icon: GoalsIcon,     label: 'Цели' },
   { to: '/profile',   icon: ProfileIcon,   label: 'Профиль' },
@@ -62,12 +62,12 @@ function HomeIcon({ size = 24, className = '' }) {
   );
 }
 
-function ChartIcon({ size = 24, className = '' }) {
+function WalletIcon({ size = 24, className = '' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
-      <rect x="3" y="14" width="4" height="7" rx="1" stroke="currentColor" strokeWidth="1.8"/>
-      <rect x="10" y="9" width="4" height="12" rx="1" stroke="currentColor" strokeWidth="1.8"/>
-      <rect x="17" y="4" width="4" height="17" rx="1" stroke="currentColor" strokeWidth="1.8"/>
+      <path d="M3 7C3 5.895 3.895 5 5 5H17C18.105 5 19 5.895 19 7V8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+      <rect x="3" y="7" width="18" height="13" rx="2.5" stroke="currentColor" strokeWidth="1.8"/>
+      <circle cx="16.5" cy="13.5" r="1.5" fill="currentColor"/>
     </svg>
   );
 }

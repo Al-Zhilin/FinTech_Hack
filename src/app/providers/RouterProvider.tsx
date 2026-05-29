@@ -7,6 +7,7 @@ import { ChatPage } from '@/pages/chat';
 import { ProfilePage } from '@/pages/profile';
 import { GoalsPage } from '@/pages/goals';
 import { AnalyticsPage } from '@/pages/analytics';
+import { FinancePage } from '@/pages/finance';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuth = useUserStore(s => s.isAuthenticated);
@@ -40,6 +41,7 @@ const router = createBrowserRouter([
     ),
     children: [
       { path: 'dashboard', element: <DashboardPage /> },
+      { path: 'finance',   element: <FinancePage /> },
       { path: 'chat',      element: <ChatPage /> },
       { path: 'profile',   element: <ProfilePage /> },
       { path: 'goals',     element: <GoalsPage /> },
