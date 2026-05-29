@@ -54,6 +54,7 @@ const SOCIALS = [
       </svg>
     ),
   },
+
   {
     id: 'vk',
     label: 'VK',
