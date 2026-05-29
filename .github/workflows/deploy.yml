@@ -13,9 +13,22 @@ jobs:
         with:
           ref: back
 
+      - name: Write .env
+        run: |
+          cat > /var/www/myapp/backend/.env <<EOF
+          PROJECT_NAME=HackathonBack
+          VERSION=0.1.0
+          DEBUG=false
+          ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
+          AI_SERVICE_URL=${{ secrets.AI_SERVICE_URL }}
+          CA_CERT_PATH=${{ secrets.CA_CERT_PATH }}
+          MONGODB_URI=${{ secrets.MONGODB_URI }}
+          MONGODB_DB_NAME=${{ secrets.MONGODB_DB_NAME }}
+          EOF
+
       - name: Copy backend to app directory
         run: |
-          rsync -a --exclude='venv' --exclude='__pycache__' \
+          rsync -a --exclude='.env' --exclude='venv' --exclude='__pycache__' \
             $GITHUB_WORKSPACE/ /var/www/myapp/backend/
 
       - name: Install backend dependencies
