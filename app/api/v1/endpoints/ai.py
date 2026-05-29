@@ -20,7 +20,7 @@ async def get_daily_action(user_id: str) -> DailyActionResponse:
         raise HTTPException(status_code=502, detail=f"Unexpected error: {type(exc).__name__}: {exc}")
 
     return DailyActionResponse(
-        action=data["action"],
+        action=data["action"], 
         category=data["category"],
         impact=data["impact"],
     )
