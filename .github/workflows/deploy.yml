@@ -14,17 +14,21 @@ jobs:
           ref: back
 
       - name: Write .env
+        env:
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          AI_SERVICE_URL: ${{ secrets.AI_SERVICE_URL }}
+          CA_CERT_PATH: ${{ secrets.CA_CERT_PATH }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME }}
         run: |
-          {
-            echo "PROJECT_NAME=HackathonBack"
-            echo "VERSION=0.1.0"
-            echo "DEBUG=false"
-            echo "ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}"
-            echo "AI_SERVICE_URL=${{ secrets.AI_SERVICE_URL }}"
-            echo "CA_CERT_PATH=${{ secrets.CA_CERT_PATH }}"
-            echo "MONGODB_URI=${{ secrets.MONGODB_URI }}"
-            echo "MONGODB_DB_NAME=${{ secrets.MONGODB_DB_NAME }}"
-          } > /var/www/myapp/backend/.env
+          printf 'PROJECT_NAME=HackathonBack\n'    >  /var/www/myapp/backend/.env
+          printf 'VERSION=0.1.0\n'                 >> /var/www/myapp/backend/.env
+          printf 'DEBUG=false\n'                   >> /var/www/myapp/backend/.env
+          printf 'ALLOWED_ORIGINS=%s\n'   "$ALLOWED_ORIGINS"  >> /var/www/myapp/backend/.env
+          printf 'AI_SERVICE_URL=%s\n'    "$AI_SERVICE_URL"   >> /var/www/myapp/backend/.env
+          printf 'CA_CERT_PATH=%s\n'      "$CA_CERT_PATH"     >> /var/www/myapp/backend/.env
+          printf 'MONGODB_URI=%s\n'       "$MONGODB_URI"      >> /var/www/myapp/backend/.env
+          printf 'MONGODB_DB_NAME=%s\n'   "$MONGODB_DB_NAME"  >> /var/www/myapp/backend/.env
 
       - name: Write CA certificate
         run: |
@@ -52,7 +56,7 @@ jobs:
             sleep 2
           done
           echo "=== Service status ==="
-          sudo systemctl status myapp --no-pager
+          systemctl status myapp --no-pager || true
           echo "=== Last 50 log lines ==="
-          sudo journalctl -u myapp -n 50 --no-pager
+          journalctl -u myapp -n 50 --no-pager || true
           exit 1
