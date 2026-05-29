@@ -63,15 +63,17 @@ async def send_message(request: ChatRequest) -> ChatResponse:
     }
 
     # AI LLM отвечает до 60 сек — таймаут 90 с запасом
-    async with httpx.AsyncClient(verify=settings.CA_CERT_PATH, timeout=90.0) as client:
-        try:
+    try:
+        async with httpx.AsyncClient(verify=settings.CA_CERT_PATH, timeout=90.0) as client:
             response = await client.post(
                 f"{settings.AI_SERVICE_URL}/ai/process", json=payload
             )
             response.raise_for_status()
             ai_data: dict = response.json()
-        except httpx.HTTPError as exc:
-            raise HTTPException(status_code=502, detail=f"AI service error: {exc}")
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"AI service error: {exc}")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Unexpected error: {exc}")
 
     # Сохраняем ответ AI в историю
     await db.messages.insert_one(

@@ -70,8 +70,8 @@ async def onboarding_step(request: OnboardingRequest) -> OnboardingResponse:
         }
     )
 
-    async with httpx.AsyncClient(verify=settings.CA_CERT_PATH, timeout=60.0) as client:
-        try:
+    try:
+        async with httpx.AsyncClient(verify=settings.CA_CERT_PATH, timeout=60.0) as client:
             response = await client.post(
                 f"{settings.AI_SERVICE_URL}/ai/onboarding",
                 json={
@@ -82,8 +82,10 @@ async def onboarding_step(request: OnboardingRequest) -> OnboardingResponse:
             )
             response.raise_for_status()
             ai_data: dict = response.json()
-        except httpx.HTTPError as exc:
-            raise HTTPException(status_code=502, detail=f"AI service error: {exc}")
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"AI service error: {exc}")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Unexpected error: {exc}")
 
     # Сохраняем ответ AI (вопрос онбординга) в историю
     if ai_data.get("question"):
@@ -103,15 +105,15 @@ async def onboarding_step(request: OnboardingRequest) -> OnboardingResponse:
 
 
 async def _save_profile(db, login: str, ai_user_id: str) -> None:
-    async with httpx.AsyncClient(verify=settings.CA_CERT_PATH, timeout=5.0) as client:
-        try:
+    try:
+        async with httpx.AsyncClient(verify=settings.CA_CERT_PATH, timeout=5.0) as client:
             response = await client.get(
                 f"{settings.AI_SERVICE_URL}/ai/onboarding/{ai_user_id}/status"
             )
             response.raise_for_status()
             status_data: dict = response.json()
-        except httpx.HTTPError:
-            return
+    except Exception:
+        return
 
     ai_profile = status_data.get("profile")
     if not ai_profile:
