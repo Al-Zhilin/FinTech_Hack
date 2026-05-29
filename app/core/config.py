@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,6 +17,11 @@ class Settings(BaseSettings):
 
     MONGODB_URI: str = "mongodb://localhost:27017"
     MONGODB_DB_NAME: str = "hackathon"
+
+    @property
+    def httpx_verify(self) -> str | bool:
+        path = Path(self.CA_CERT_PATH)
+        return str(path) if path.exists() else False
 
 
 settings = Settings()

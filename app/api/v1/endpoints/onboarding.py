@@ -71,7 +71,7 @@ async def onboarding_step(request: OnboardingRequest) -> OnboardingResponse:
     )
 
     try:
-        async with httpx.AsyncClient(verify=settings.CA_CERT_PATH, timeout=60.0) as client:
+        async with httpx.AsyncClient(verify=settings.httpx_verify, timeout=60.0) as client:
             response = await client.post(
                 f"{settings.AI_SERVICE_URL}/ai/onboarding",
                 json={
@@ -106,7 +106,7 @@ async def onboarding_step(request: OnboardingRequest) -> OnboardingResponse:
 
 async def _save_profile(db, login: str, ai_user_id: str) -> None:
     try:
-        async with httpx.AsyncClient(verify=settings.CA_CERT_PATH, timeout=5.0) as client:
+        async with httpx.AsyncClient(verify=settings.httpx_verify, timeout=5.0) as client:
             response = await client.get(
                 f"{settings.AI_SERVICE_URL}/ai/onboarding/{ai_user_id}/status"
             )

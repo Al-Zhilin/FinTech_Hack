@@ -64,7 +64,7 @@ async def send_message(request: ChatRequest) -> ChatResponse:
 
     # AI LLM отвечает до 60 сек — таймаут 90 с запасом
     try:
-        async with httpx.AsyncClient(verify=settings.CA_CERT_PATH, timeout=90.0) as client:
+        async with httpx.AsyncClient(verify=settings.httpx_verify, timeout=90.0) as client:
             response = await client.post(
                 f"{settings.AI_SERVICE_URL}/ai/process", json=payload
             )
