@@ -16,10 +16,14 @@ jobs:
 
       - name: Build
         run: npm run build
-        env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
       - name: Copy build to nginx root
         run: |
           rm -rf /var/www/myapp/frontend/*
           cp -r dist/* /var/www/myapp/frontend/
+
+      - name: Apply nginx config and reload
+        run: |
+          cp .github/nginx.conf /etc/nginx/sites-available/myapp
+          ln -sf /etc/nginx/sites-available/myapp /etc/nginx/sites-enabled/myapp
+          nginx -t && systemctl reload nginx

@@ -135,7 +135,7 @@ export const ChatPage = () => {
     // TEMP: ping backend health endpoint; reply "абоообаа" on HTTP 200.
     let content: string;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/health`);
+      const res = await fetch('/api/v1/ai/health');
       content = res.status === 200 ? 'абоообаа' : `Сервер вернул статус ${res.status}`;
     } catch {
       content = 'Не удалось подключиться к серверу';
