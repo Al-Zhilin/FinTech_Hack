@@ -15,16 +15,16 @@ jobs:
 
       - name: Write .env
         run: |
-          cat > /var/www/myapp/backend/.env <<EOF
-          PROJECT_NAME=HackathonBack
-          VERSION=0.1.0
-          DEBUG=false
-          ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
-          AI_SERVICE_URL=${{ secrets.AI_SERVICE_URL }}
-          CA_CERT_PATH=${{ secrets.CA_CERT_PATH }}
-          MONGODB_URI=${{ secrets.MONGODB_URI }}
-          MONGODB_DB_NAME=${{ secrets.MONGODB_DB_NAME }}
-          EOF
+          {
+            echo "PROJECT_NAME=HackathonBack"
+            echo "VERSION=0.1.0"
+            echo "DEBUG=false"
+            echo "ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}"
+            echo "AI_SERVICE_URL=${{ secrets.AI_SERVICE_URL }}"
+            echo "CA_CERT_PATH=${{ secrets.CA_CERT_PATH }}"
+            echo "MONGODB_URI=${{ secrets.MONGODB_URI }}"
+            echo "MONGODB_DB_NAME=${{ secrets.MONGODB_DB_NAME }}"
+          } > /var/www/myapp/backend/.env
 
       - name: Write CA certificate
         run: |
@@ -45,7 +45,7 @@ jobs:
         run: sudo systemctl restart myapp
 
       - name: Wait for FastAPI to start
-        run: sleep 3
+        run: sleep 6
 
       - name: Health check
         run: |
