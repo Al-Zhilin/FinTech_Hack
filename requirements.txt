@@ -9,3 +9,4 @@ trafilatura==2.0.0
 pyyaml==6.0.2
 python-dotenv==1.0.1
 ollama==0.4.2
+pymongo>=4.6.0

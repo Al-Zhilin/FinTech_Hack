@@ -1,4 +1,27 @@
-INFO:     Started server process [11400]
+INFO:     Started server process [15848]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+2026-05-29 16:22:16,446 [INFO] app.main: [/ai/onboarding] user_id=test-ru-1992 message='Привет'
+2026-05-29 16:22:19,659 [WARNING] app.database: [db] MongoDB unavailable, using in-memory fallback: SSL handshake failed: ac-nopsjyj-shard-00-01.nzkcxqi.mongodb.net:27017: [SSL: TLSV1_ALERT_INTERNAL_ERROR] tlsv1 alert internal error (_ssl.c:1006) (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms),SSL handshake failed: ac-nopsjyj-shard-00-00.nzkcxqi.mongodb.net:27017: [SSL: TLSV1_ALERT_INTERNAL_ERROR] tlsv1 alert internal error (_ssl.c:1006) (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms),SSL handshake failed: ac-nopsjyj-shard-00-02.nzkcxqi.mongodb.net:27017: [SSL: TLSV1_ALERT_INTERNAL_ERROR] tlsv1 alert internal error (_ssl.c:1006) (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms), Timeout: 3.0s, Topology Description: <TopologyDescription id: 6a199308b63582e7192a3945, topology_type: ReplicaSetNoPrimary, servers: [<ServerDescription ('ac-nopsjyj-shard-00-00.nzkcxqi.mongodb.net', 27017) server_type: Unknown, rtt: None, error=AutoReconnect('SSL handshake failed: ac-nopsjyj-shard-00-00.nzkcxqi.mongodb.net:27017: [SSL: TLSV1_ALERT_INTERNAL_ERROR] tlsv1 alert internal error (_ssl.c:1006) (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms)')>, <ServerDescription ('ac-nopsjyj-shard-00-01.nzkcxqi.mongodb.net', 27017) server_type: Unknown, rtt: None, error=AutoReconnect('SSL handshake failed: ac-nopsjyj-shard-00-01.nzkcxqi.mongodb.net:27017: [SSL: TLSV1_ALERT_INTERNAL_ERROR] tlsv1 alert internal error (_ssl.c:1006) (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms)')>, <ServerDescription ('ac-nopsjyj-shard-00-02.nzkcxqi.mongodb.net', 27017) server_type: Unknown, rtt: None, error=AutoReconnect('SSL handshake failed: ac-nopsjyj-shard-00-02.nzkcxqi.mongodb.net:27017: [SSL: TLSV1_ALERT_INTERNAL_ERROR] tlsv1 alert internal error (_ssl.c:1006) (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms)')>]>
+2026-05-29 16:22:22,129 [INFO] httpx: HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-05-29 16:22:22,143 [INFO] app.main: [/ai/onboarding] user_id=test-ru-1992 message='Видеоигры, аниме, программирование'
+2026-05-29 16:22:24,441 [INFO] httpx: HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-05-29 16:22:24,443 [INFO] app.main: [/ai/onboarding] user_id=test-ru-1992 message='Spotify, Яндекс.Плюс'
+2026-05-29 16:22:26,876 [INFO] httpx: HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-05-29 16:22:26,879 [INFO] app.main: [/ai/onboarding] user_id=test-ru-1992 message='Редко, раз в месяц'
+2026-05-29 16:22:28,865 [INFO] httpx: HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-05-29 16:22:28,868 [INFO] app.main: [/ai/onboarding] user_id=test-ru-1992 message='Spotify и Яндекс.Плюс'
+2026-05-29 16:22:30,200 [INFO] httpx: HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-05-29 16:22:30,203 [INFO] app.main: [/ai/onboarding] user_id=test-ru-1992 message='Метро'
+2026-05-29 16:22:30,934 [INFO] httpx: HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-05-29 16:22:30,937 [INFO] app.main: [/ai/onboarding] user_id=test-ru-1992 message='180 тысяч в месяц'
+2026-05-29 16:22:33,792 [INFO] httpx: HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-05-29 16:22:33,795 [INFO] app.main: [/ai/onboarding] user_id=test-ru-1992 message='Аренда 40 тысяч, кредитов нет'
+2026-05-29 16:22:36,730 [INFO] httpx: HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-05-29 16:22:36,732 [INFO] app.main: [/ai/onboarding] user_id=test-ru-1992 message='Накоплений 200 тысяч'
+2026-05-29 16:22:39,700 [INFO] httpx: HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-05-29 16:22:39,703 [INFO] app.main: [/ai/onboarding] user_id=test-ru-1992 message='Накопить подушку на 6 месяцев'
+2026-05-29 16:22:42,859 [INFO] httpx: HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 200 OK"
+2026-05-29 16:22:42,860 [INFO] app.onboarding: [onboarding] profile saved for user test-ru-1992
+WARNING:  Invalid HTTP request received.

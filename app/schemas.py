@@ -9,6 +9,8 @@ class UserProfile(BaseModel):
     monthly_income: float | None = None
     monthly_expenses: float | None = None
     savings: float | None = None
+    monthly_debt_payments: float | None = None
+    financial_goal_amount: float | None = None
     goals: list[str] = []
     portfolio: dict[str, Any] = {}
     risk_tolerance: Literal["low", "medium", "high"] | None = None

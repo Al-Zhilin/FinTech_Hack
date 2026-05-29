@@ -219,9 +219,9 @@ TESTS: list[dict] = [
 def check_server() -> bool:
     try:
         with httpx.Client(timeout=5) as client:
-            client.get(f"{BASE_URL}/health")
-        return True
-    except httpx.ConnectError:
+            r = client.get(f"{BASE_URL}/health")
+        return r.status_code == 200
+    except Exception:
         return False
 
 

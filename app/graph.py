@@ -7,6 +7,7 @@ from typing import Any, TypedDict
 import yaml
 from langgraph.graph import END, StateGraph
 
+from .calculators import credit_traffic_light, financial_health_score, savings_plan
 from .connectors import web_search
 from .llm import OllamaClient
 
@@ -41,25 +42,47 @@ class AgentState(TypedDict):
 # ── Config ─────────────────────────────────────────────────────────────────────
 def _load_prompts() -> dict:
     path = os.path.join(os.path.dirname(__file__), "prompts.yaml")
-    with open(path, encoding="utf-8") as f:
-        return yaml.safe_load(f)
+    try:
+        with open(path, encoding="utf-8") as f:
+            return yaml.safe_load(f)
+    except FileNotFoundError:
+        raise RuntimeError(f"prompts.yaml not found at {path}") from None
 
 
 PROMPTS = _load_prompts()
 PLANNER_MODEL = os.getenv("PLANNER_MODEL", "qwen2.5:7b-instruct-q4_K_M")
 ANALYST_MODEL = os.getenv("ANALYST_MODEL", "qwen2.5:7b-instruct-q4_K_M")
+_CLIENT = OllamaClient(os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
+
+
+_LOAN_KEYWORDS = re.compile(
+    r"\b(кредит\w*|займ\w*|заём\w*|ипотек\w*|рассрочк\w*)\b",
+    re.IGNORECASE,
+)
 
 
 def _parse_json(raw: str) -> dict:
-    """Strip markdown fences and control characters, then parse JSON."""
     cleaned = re.sub(r"```(?:json)?\s*|\s*```", "", raw).strip()
-    # Remove control chars except \t \n \r which are valid in JSON strings
     cleaned = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", cleaned)
     return json.loads(cleaned)
 
 
-def _client() -> OllamaClient:
-    return OllamaClient(os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
+def _extract_loan_params(query: str) -> dict | None:
+    cfg = PROMPTS["loan_extractor"]
+    prompt = cfg["user_template"].format(query=query)
+    try:
+        raw = _CLIENT.generate(model=PLANNER_MODEL, prompt=prompt, system=cfg["system"])
+        cleaned = re.sub(r"```(?:json)?\s*|\s*```", "", raw).strip()
+        cleaned = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", cleaned)
+        if cleaned.lower() in ("null", "none", ""):
+            return None
+        data = json.loads(cleaned)
+        if not data or not data.get("loan_amount"):
+            return None
+        return data
+    except Exception as e:
+        logger.debug(f"[loan_extractor] failed: {e}")
+        return None
 
 
 # ── Nodes ──────────────────────────────────────────────────────────────────────
@@ -73,7 +96,7 @@ def node_planner(state: AgentState) -> AgentState:
     search_query = None
 
     try:
-        raw = _client().generate(model=PLANNER_MODEL, prompt=prompt, system=cfg["system"])
+        raw = _CLIENT.generate(model=PLANNER_MODEL, prompt=prompt, system=cfg["system"])
         data = _parse_json(raw)
         intent = data.get("intent", "question")
         needs_search = bool(data.get("needs_search", False))
@@ -102,6 +125,7 @@ def _build_profile_block(profile: dict) -> str:
         ("occupation", "Профессия"),
         ("monthly_income", "Доход в месяц (руб)"),
         ("monthly_expenses", "Расходы в месяц (руб)"),
+        ("monthly_debt_payments", "Платежи по долгам в месяц (руб)"),
         ("savings", "Накопления (руб)"),
         ("risk_tolerance", "Риск-профиль"),
     ]
@@ -111,6 +135,48 @@ def _build_profile_block(profile: dict) -> str:
     if profile.get("portfolio"):
         parts.append(f"- Портфель: {profile['portfolio']}")
     return ("Профиль пользователя:\n" + "\n".join(parts)) if parts else ""
+
+
+def _run_calculator(state: AgentState) -> dict | None:
+    intent = state.get("intent", "")
+    if intent not in ("advice", "analysis"):
+        return None
+
+    profile = state.get("context", {}).get("user_profile", {}) or {}
+    query = state.get("query", "")
+    result: dict = {}
+
+    income = profile.get("monthly_income")
+
+    if income:
+        expenses = profile.get("monthly_expenses") or 0.0
+        savings_val = profile.get("savings") or 0.0
+        debt = profile.get("monthly_debt_payments") or 0.0
+
+        result["health"] = financial_health_score(income, expenses, debt, savings_val)
+
+        goals = profile.get("goals", [])
+        if goals:
+            goal_amount = profile.get("financial_goal_amount") or 0.0
+            plan = savings_plan(income, expenses, debt, goal_amount=goal_amount, goal_name=goals[0])
+            if not goal_amount:
+                plan["note"] = "Сумма цели не указана — план приблизительный"
+            result["savings_plan"] = plan
+
+    if _LOAN_KEYWORDS.search(query):
+        loan_params = _extract_loan_params(query)
+        if loan_params:
+            traffic = credit_traffic_light(
+                monthly_income=income or 50_000.0,
+                current_payments=profile.get("monthly_debt_payments") or 0.0,
+                new_loan_amount=float(loan_params.get("loan_amount", 0)),
+                new_loan_rate_annual=float(loan_params.get("rate_annual", 20.0)),
+                new_loan_months=int(loan_params.get("months", 12)),
+            )
+            result["traffic_light"] = traffic
+            logger.info(f"[calculator] traffic_light={traffic['color']} pti_after={traffic['pti_after']}")
+
+    return result or None
 
 
 def node_analyst(state: AgentState) -> AgentState:
@@ -124,10 +190,17 @@ def node_analyst(state: AgentState) -> AgentState:
 
     profile_block = _build_profile_block(state.get("context", {}).get("user_profile", {}))
 
+    calc_result = _run_calculator(state)
+    calc_block = ""
+    if calc_result:
+        import json as _json
+        calc_block = "Результаты калькулятора:\n" + _json.dumps(calc_result, ensure_ascii=False, indent=2)
+
     prompt = cfg["user_template"].format(
         query=state["query"],
         search_block=search_block,
         profile_block=profile_block,
+        calc_block=calc_block,
     )
 
     raw = ""
@@ -135,13 +208,17 @@ def node_analyst(state: AgentState) -> AgentState:
     structured: dict[str, Any] = {}
 
     try:
-        raw = _client().generate(model=ANALYST_MODEL, prompt=prompt, system=cfg["system"])
+        raw = _CLIENT.generate(model=ANALYST_MODEL, prompt=prompt, system=cfg["system"])
         data = _parse_json(raw)
         answer_text = data.get("text", raw)
         structured = data.get("structured", {})
+        if calc_result:
+            structured["calculator_result"] = calc_result
     except Exception as e:
         logger.warning(f"[analyst] parse failed ({e}), using raw text")
         answer_text = raw or answer_text
+        if calc_result:
+            structured["calculator_result"] = calc_result
 
     logger.info(f"[analyst] done — answer_len={len(answer_text)}")
     return {**state, "answer_text": answer_text, "structured": structured}
