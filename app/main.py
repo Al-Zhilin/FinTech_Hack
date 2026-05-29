@@ -10,7 +10,7 @@ from app.core.database import close_db, connect_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await connect_db()
+    await connect_db() 
     yield
     await close_db()
 
