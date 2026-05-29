@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { genId } from '@/shared/lib/genId';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useUserStore } from '@/entities/user/model/userStore';
 import { useAuthStore } from '@/entities/user/model/authStore';
@@ -25,7 +26,7 @@ export const OnboardingPage = () => {
     const name = account.current.name;
 
     const user: User = {
-      id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36),
+      id: genId(),
       name,
       email,
       income: 0,

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/shared/ui/Button';
 import { onboardingStep } from '@/shared/api/onboarding';
+import { genId } from '@/shared/lib/genId';
 
 interface Message {
   id: string;
@@ -41,7 +42,7 @@ export const AIOnboarding = ({ userLogin, onBack, onComplete }: AIOnboardingProp
   };
 
   const addAIMessage = useCallback((text: string) => {
-    setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'ai', text }]);
+    setMessages(prev => [...prev, { id: genId(), role: 'ai', text }]);
   }, []);
 
   const send = useCallback(async (message: string) => {
@@ -94,7 +95,7 @@ export const AIOnboarding = ({ userLogin, onBack, onComplete }: AIOnboardingProp
   const handleSend = () => {
     const text = inputValue.trim();
     if (!text || isLoading || isComplete) return;
-    setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'user', text }]);
+    setMessages(prev => [...prev, { id: genId(), role: 'user', text }]);
     setLastUserMessage(text);
     setInputValue('');
     send(text);
