@@ -26,6 +26,11 @@ jobs:
           MONGODB_DB_NAME=${{ secrets.MONGODB_DB_NAME }}
           EOF
 
+      - name: Write CA certificate
+        run: |
+          mkdir -p /var/www/myapp/backend/certs
+          echo "${{ secrets.CA_CERT_B64 }}" | base64 -d > /var/www/myapp/backend/certs/ca.crt
+
       - name: Copy backend to app directory
         run: |
           rsync -a --exclude='.env' --exclude='venv' --exclude='__pycache__' \
