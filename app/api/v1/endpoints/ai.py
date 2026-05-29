@@ -2,8 +2,28 @@ import httpx
 from fastapi import APIRouter, HTTPException
 
 from app.core.config import settings
+from app.schemas.daily_action import DailyActionResponse
 
 router = APIRouter()
+
+
+@router.get("/daily-action/{user_id}", response_model=DailyActionResponse, summary="Get daily action for user")
+async def get_daily_action(user_id: str) -> DailyActionResponse:
+    try:
+        async with httpx.AsyncClient(verify=settings.httpx_verify, timeout=10.0, trust_env=False) as client:
+            response = await client.get(f"{settings.AI_SERVICE_URL}/ai/daily-action/{user_id}")
+            response.raise_for_status()
+            data = response.json()
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"AI service unreachable: {type(exc).__name__}: {exc}")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Unexpected error: {type(exc).__name__}: {exc}")
+
+    return DailyActionResponse(
+        action=data["action"],
+        category=data["category"],
+        impact=data["impact"],
+    )
 
 
 @router.get("/health", summary="AI service availability check")
