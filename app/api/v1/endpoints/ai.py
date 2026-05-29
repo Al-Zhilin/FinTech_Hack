@@ -9,7 +9,7 @@ router = APIRouter()
 @router.get("/health", summary="AI service availability check")
 async def ai_health():
     try:
-        async with httpx.AsyncClient(verify=settings.httpx_verify, timeout=10.0) as client:
+        async with httpx.AsyncClient(verify=settings.httpx_verify, timeout=10.0, trust_env=False) as client:
             response = await client.get(f"{settings.AI_SERVICE_URL}/health")
             response.raise_for_status()
             data = response.json()
