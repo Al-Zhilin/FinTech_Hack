@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
 
-    AI_SERVICE_URL: str = "https://localhost:8001"
+    AI_SERVICE_URL: str = "http://localhost:8001"
     CA_CERT_PATH: str = "certs/ca.crt"
     AI_SSL_VERIFY: bool = False
 
