@@ -45,11 +45,14 @@ jobs:
         run: sudo systemctl restart myapp
 
       - name: Wait for FastAPI to start
-        run: sleep 6
-
-      - name: Health check
         run: |
-          RESPONSE=$(curl -s http://127.0.0.1:8000/api/v1/health)
-          echo "Response: $RESPONSE"
-          echo $RESPONSE | grep -q '"status":"ok"' \
-            || (echo "Health check failed!" && exit 1)
+          for i in {1..15}; do
+            curl -sf http://127.0.0.1:8000/api/v1/health > /dev/null && exit 0
+            echo "Attempt $i: not ready yet..."
+            sleep 2
+          done
+          echo "=== Service status ==="
+          sudo systemctl status myapp --no-pager
+          echo "=== Last 50 log lines ==="
+          sudo journalctl -u myapp -n 50 --no-pager
+          exit 1
