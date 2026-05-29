@@ -6,13 +6,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.endpoints.health import router as health_router
 from app.api.v1.router import router as api_v1_router
 from app.core.config import settings
+from app.core.database import close_db, connect_db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # startup
+    await connect_db()
     yield
-    # shutdown
+    await close_db()
 
 
 app = FastAPI(

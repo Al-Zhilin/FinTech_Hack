@@ -25,3 +25,13 @@ jobs:
 
       - name: Restart FastAPI
         run: sudo systemctl restart myapp
+
+      - name: Wait for FastAPI to start
+        run: sleep 3
+
+      - name: Health check
+        run: |
+          RESPONSE=$(curl -s http://127.0.0.1:8000/api/v1/health)
+          echo "Response: $RESPONSE"
+          echo $RESPONSE | grep -q '"status":"ok"' \
+            || (echo "Health check failed!" && exit 1)

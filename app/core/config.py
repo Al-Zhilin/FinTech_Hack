@@ -10,5 +10,11 @@ class Settings(BaseSettings):
 
     ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
 
+    AI_SERVICE_URL: str = "https://localhost:8001"
+    CA_CERT_PATH: str = "certs/ca.crt"
+
+    MONGODB_URI: str = "mongodb://localhost:27017"
+    MONGODB_DB_NAME: str = "hackathon"
+
 
 settings = Settings()
