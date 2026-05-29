@@ -47,7 +47,7 @@ async def send_message(request: ChatRequest) -> ChatResponse:
     db = get_db()
     user = await _get_or_create_user(db, request.login)
 
-    ai_user_id: str = user["ai_user_id"]
+    ai_user_id: str = user["ai_user_id"] 
     user_profile: dict = user.get("profile") or {}
     history = await _get_history(db, request.login)
 
