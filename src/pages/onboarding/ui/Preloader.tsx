@@ -24,7 +24,7 @@ export const Preloader = ({ onDone }: { onDone: () => void }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <span className="text-2xl font-bold text-text-primary tracking-tight">Эквватор</span>
+        <span className="text-2xl font-bold text-text-primary tracking-tight">КопиКот</span>
         <span className="text-sm text-text-secondary">Финансовое равновесие</span>
       </motion.div>
 

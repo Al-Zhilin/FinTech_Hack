@@ -4,22 +4,13 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useUserStore } from '@/entities/user/model/userStore';
 import { useAuthStore } from '@/entities/user/model/authStore';
 import type { Account } from '@/entities/user/model/authStore';
-import type { QuizAnswers, User } from '@/shared/types';
-import { analyzeQuiz, quizGoalToFinancialGoal } from '../model/quiz';
-import { getGoalLabel } from '@/entities/user/model/goals';
+import type { User } from '@/shared/types';
 import { Preloader } from './Preloader';
 import { Features } from './Features';
 import { AuthPhase } from './AuthPhase';
-import { Quiz } from './Quiz';
-import { UploadPhase } from './UploadPhase';
-import { Analyzing } from './Analyzing';
+import { AIOnboarding } from './AIOnboarding';
 
-type Phase = 'preloader' | 'features' | 'auth' | 'quiz' | 'upload' | 'analyzing';
-
-// Rough spend ratio per "money left" answer — used to seed monthlyExpenses.
-const SPEND_RATIO: Record<string, number> = {
-  always: 0.6, often: 0.75, varies: 0.85, rarely: 0.95, never: 1.05,
-};
+type Phase = 'preloader' | 'features' | 'auth' | 'ai-onboarding';
 
 export const OnboardingPage = () => {
   const navigate = useNavigate();
@@ -28,30 +19,21 @@ export const OnboardingPage = () => {
 
   const [phase, setPhase] = useState<Phase>('preloader');
   const account = useRef<{ email: string; name: string }>({ email: '', name: '' });
-  const quizAnswers = useRef<QuizAnswers | null>(null);
 
   const finish = () => {
-    const a = quizAnswers.current;
     const email = account.current.email;
     const name = account.current.name;
-
-    const analysis = a ? analyzeQuiz(a) : undefined;
-    const income = a?.income ?? 0;
-    const goal = quizGoalToFinancialGoal(a?.currentGoal ?? 'no_goal');
 
     const user: User = {
       id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36),
       name,
       email,
-      income,
-      goal,
-      goalLabel: getGoalLabel(goal),
-      monthlyExpenses: Math.round(income * (SPEND_RATIO[a?.moneyLeft ?? 'varies'] ?? 0.85)),
-      hasCredits: !!a && a.credits !== 'none',
-      creditAmount: undefined,
+      income: 0,
+      goal: 'other',
+      goalLabel: 'Профиль создан',
+      monthlyExpenses: 0,
+      hasCredits: false,
       createdAt: new Date().toISOString(),
-      quiz: a ?? undefined,
-      analysis,
     };
 
     if (email) saveProfile(email, user);
@@ -83,23 +65,18 @@ export const OnboardingPage = () => {
             <AuthPhase
               onRegistered={(email, name) => {
                 account.current = { email, name };
-                setPhase('quiz');
+                setPhase('ai-onboarding');
               }}
               onLoginExisting={loginExisting}
             />
           )}
-          {phase === 'quiz' && (
-            <Quiz
-              userName={account.current.name}
+          {phase === 'ai-onboarding' && (
+            <AIOnboarding
+              userLogin={account.current.email}
               onBack={() => setPhase('auth')}
-              onComplete={a => {
-                quizAnswers.current = a;
-                setPhase('upload');
-              }}
+              onComplete={finish}
             />
           )}
-          {phase === 'upload' && <UploadPhase onContinue={() => setPhase('analyzing')} />}
-          {phase === 'analyzing' && <Analyzing onDone={finish} />}
         </motion.div>
       </AnimatePresence>
     </div>
