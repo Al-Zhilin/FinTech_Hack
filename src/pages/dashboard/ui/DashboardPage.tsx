@@ -8,6 +8,8 @@ import { ProgressBar } from '@/shared/ui/ProgressBar';
 import { formatCurrency, getGreeting } from '@/shared/lib/formatters';
 import type { AiInsight, CategorySummary, Goal } from '@/shared/types';
 import { AnalyticsModal } from '@/widgets/AnalyticsModal';
+import { InsightFeed } from '@/widgets/insight-feed/InsightFeed';
+import { AskAiButton, useAskAi } from '@/features/ask-ai';
 
 // ─── Stagger animation ─────────────────────────────────────────────────────────
 const item = {
@@ -53,6 +55,7 @@ const WeekStrip = () => {
 // ─── Insight card ──────────────────────────────────────────────────────────────
 
 const InsightCard = ({ insight, onDismiss }: { insight: AiInsight; onDismiss: () => void }) => {
+  const ask = useAskAi();
   const configs = {
     warning: { bg: 'bg-warning-light', text: 'text-warning', icon: '⚠️', badge: 'warning' as const },
     success: { bg: 'bg-success-light', text: 'text-success', icon: '✅', badge: 'success' as const },
@@ -60,6 +63,9 @@ const InsightCard = ({ insight, onDismiss }: { insight: AiInsight; onDismiss: ()
     forecast:{ bg: 'bg-danger-light',   text: 'text-danger',   icon: '📊', badge: 'danger' as const },
   };
   const c = configs[insight.type];
+
+  // Готовый промт из текста инсайта — пользователю не нужно ничего формулировать
+  const question = `Разбери подробнее: «${insight.title}». ${insight.body} Что мне с этим делать?`;
 
   return (
     <div className={`${c.bg} rounded-xl p-4 relative`}>
@@ -73,11 +79,12 @@ const InsightCard = ({ insight, onDismiss }: { insight: AiInsight; onDismiss: ()
         </p>
         <p className={`font-bold text-base ${c.text} mb-1`}>{insight.title}</p>
         <p className="text-sm text-text-secondary leading-snug">{insight.body}</p>
-        {insight.action && (
-          <button className={`text-sm font-semibold ${c.text} mt-2 flex items-center gap-1`}>
-            {insight.action} →
-          </button>
-        )}
+        <button
+          onClick={() => ask(question)}
+          className={`text-sm font-semibold ${c.text} mt-2 flex items-center gap-1`}
+        >
+          {insight.action ?? 'Что с этим делать?'} →
+        </button>
       </div>
     </div>
   );
@@ -274,6 +281,24 @@ export const DashboardPage = () => {
               <CategoryRow key={cat.category} cat={cat} />
             ))}
           </div>
+
+          {/* AI-вывод из расходов + вопрос */}
+          {(() => {
+            const over = profile.categories.find(c => c.amount > c.budget);
+            const top = [...profile.categories].sort((a, b) => b.amount - a.amount)[0];
+            const text = over
+              ? `Категория «${over.label}» вышла за бюджет на ${formatCurrency(over.amount - over.budget, true)}.`
+              : `Больше всего уходит на «${top.label}» — ${formatCurrency(top.amount, true)} за месяц.`;
+            const question = over
+              ? `Категория «${over.label}» превысила бюджет. Как мне сократить эти траты?`
+              : `Больше всего я трачу на «${top.label}». Это нормально и где можно сэкономить?`;
+            return (
+              <div className="mt-4 pt-4 border-t border-border-light flex items-center justify-between gap-3">
+                <p className="text-xs text-text-secondary leading-snug flex-1">🤖 {text}</p>
+                <AskAiButton question={question} label="Разобрать" className="flex-shrink-0" />
+              </div>
+            );
+          })()}
         </Card>
       </motion.div>
 
@@ -304,6 +329,11 @@ export const DashboardPage = () => {
             })}
           </div>
         </Card>
+      </motion.div>
+
+      {/* ── AI insight feed (blocks с вопросами) ── */}
+      <motion.div variants={item} className="px-5 mb-6">
+        <InsightFeed />
       </motion.div>
     </motion.div>
 

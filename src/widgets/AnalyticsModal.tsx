@@ -6,8 +6,8 @@ import {
 } from 'framer-motion';
 import { useUserStore } from '@/entities/user/model/userStore';
 import { useFinanceStore } from '@/entities/finance/model/financeStore';
-import { formatCurrency } from '@/shared/lib/formatters';
-import type { FinancialProfile } from '@/shared/types';
+import { buildInsights, type Insight } from '@/entities/insight/model/insights';
+import { useAskAi } from '@/features/ask-ai';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -21,172 +21,19 @@ const VELOCITY_THRESHOLD = 400;
 
 const BG = '#F19B8C';
 
-// ─── Slide data ──────────────────────────────────────────────────────────────
-
-interface Slide {
-  emoji: string;
-  tag: string;
-  title: string;
-  resultLabel: string;
-  resultValue: string;
-  resultSub?: string;
-  recommendation: string;
-}
-
-// Кураторские пулы — ротация по дню месяца, чтобы контент всегда существовал и обновлялся
-const NEWS_POOL: Omit<Slide, 'emoji' | 'tag'>[] = [
-  {
-    title: 'Вклады на пике доходности',
-    resultLabel: 'Ставки по вкладам',
-    resultValue: 'до 18%',
-    resultSub: 'Ключевая ставка ЦБ держится высокой',
-    recommendation:
-      'Сейчас выгодное время копить: открой накопительный счёт или короткий вклад — деньги будут работать сами, без риска.',
-  },
-  {
-    title: 'Инфляция съедает наличные',
-    resultLabel: 'Годовая инфляция',
-    resultValue: '~8%',
-    resultSub: 'Деньги «под подушкой» теряют ценность',
-    recommendation:
-      'Держать всю сумму наличными невыгодно. Размести подушку безопасности на накопительном счёте с процентом на остаток.',
-  },
-  {
-    title: 'Верни до 52 000 ₽ за год',
-    resultLabel: 'Налоговый вычет по ИИС',
-    resultValue: '13%',
-    resultSub: 'Государство возвращает налог с инвестиций',
-    recommendation:
-      'Если платишь НДФЛ — открой ИИС. Внося до 400 000 ₽ в год, можно вернуть до 52 000 ₽ налогового вычета.',
-  },
-  {
-    title: 'Кэшбэк стал выгоднее',
-    resultLabel: 'Средний кэшбэк по картам',
-    resultValue: 'до 5%',
-    resultSub: 'Банки усилили программы лояльности',
-    recommendation:
-      'Подбери карту с повышенным кэшбэком в твоих топ-категориях трат — это пассивный возврат нескольких тысяч в месяц.',
-  },
-];
-
-const SAVING_POOL: Omit<Slide, 'emoji' | 'tag' | 'resultValue' | 'resultSub'>[] = [
-  {
-    title: 'Правило 50 / 30 / 20',
-    resultLabel: 'Откладывай минимум',
-    recommendation:
-      '50% дохода — на нужды, 30% — на желания, 20% — в накопления. Раздели счета сразу после зарплаты, чтобы не было соблазна потратить.',
-  },
-  {
-    title: 'Сначала заплати себе',
-    resultLabel: 'Автоперевод в день зарплаты',
-    recommendation:
-      'Настрой автоматический перевод части дохода на отдельный счёт в день зарплаты. Копить «что останется» почти никогда не работает.',
-  },
-  {
-    title: 'Округляй каждую покупку',
-    resultLabel: 'Копилка из мелочи',
-    recommendation:
-      'Подключи округление трат: с каждой покупки остаток до 100 ₽ уходит в копилку. За год незаметно набегает крупная сумма.',
-  },
-];
-
-const LIFEHACK_POOL: Omit<Slide, 'emoji' | 'tag'>[] = [
-  {
-    title: 'Правило 24 часов',
-    resultLabel: 'Против импульсивных трат',
-    resultValue: '−40%',
-    resultSub: 'спонтанных покупок',
-    recommendation:
-      'Захотел купить что-то незапланированное — подожди сутки. В большинстве случаев желание проходит, а деньги остаются.',
-  },
-  {
-    title: 'Список перед магазином',
-    resultLabel: 'Экономия на продуктах',
-    resultValue: 'до 20%',
-    resultSub: 'чека за поход в магазин',
-    recommendation:
-      'Ходи в магазин со списком и не на голодный желудок. Покупки строго по списку срезают чек на пятую часть.',
-  },
-  {
-    title: 'Ревизия подписок',
-    resultLabel: 'Скрытые ежемесячные траты',
-    resultValue: '~2 000 ₽',
-    resultSub: 'в месяц на ненужных подписках',
-    recommendation:
-      'Раз в месяц проверяй список активных подписок. Отмени те, которыми не пользовался последние 30 дней — это чистая экономия.',
-  },
-];
-
-const buildSlides = (p: FinancialProfile): Slide[] => {
-  const saved = p.monthlyIncome - p.monthlySpent;
-  const health = 100 - p.stressScore;
-  const healthLabel =
-    health >= 65 ? 'Отличное' : health >= 40 ? 'Стабильное' : 'Требует внимания';
-
-  // Ближайшая по сроку цель (с запасным вариантом, если целей нет)
-  const closestGoal = [...p.goals].sort(
-    (a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime(),
-  )[0];
-  const goalPct = closestGoal
-    ? Math.round((closestGoal.current / closestGoal.target) * 100)
-    : 0;
-  const goalLeft = closestGoal ? closestGoal.target - closestGoal.current : 0;
-
-  // Детерминированная ротация по дню месяца
-  const day = new Date().getDate();
-  const news = NEWS_POOL[day % NEWS_POOL.length];
-  const saving = SAVING_POOL[day % SAVING_POOL.length];
-  const lifehack = LIFEHACK_POOL[day % LIFEHACK_POOL.length];
-  const savingTarget = Math.round((p.monthlyIncome * 0.2) / 100) * 100;
-
-  return [
-    // 1 — Анализ профиля
-    {
-      emoji: '📊',
-      tag: 'Анализ профиля',
-      title: 'Твой финансовый портрет',
-      resultLabel: 'Индекс здоровья финансов',
-      resultValue: `${health}/100`,
-      resultSub: `${healthLabel} · баланс ${formatCurrency(p.balance, true)} · копишь ${p.savingsRate}%`,
-      recommendation:
-        health >= 65
-          ? 'Финансы в балансе — так держать! Подумай о подушке на 6 месяцев расходов, если её ещё нет.'
-          : `Откладываешь ${formatCurrency(saved, true)} в месяц. Сократи 1–2 крупные категории трат — и индекс заметно вырастет.`,
-    },
-    // 2 — Из целей
-    {
-      emoji: '🎯',
-      tag: 'Твоя цель',
-      title: closestGoal ? `Цель «${closestGoal.title}»` : 'Поставь первую цель',
-      resultLabel: closestGoal ? 'Прогресс накоплений' : 'Активных целей пока нет',
-      resultValue: closestGoal ? `${goalPct}%` : 'Старт',
-      resultSub: closestGoal
-        ? `${formatCurrency(closestGoal.current, true)} из ${formatCurrency(closestGoal.target, true)} · осталось ${formatCurrency(goalLeft, true)}`
-        : 'С целью копить проще и мотивации больше',
-      recommendation: closestGoal
-        ? goalPct >= 70
-          ? 'Финишная прямая! Добавь небольшой бонус в этом месяце — и закроешь цель раньше срока.'
-          : `Чтобы успеть к сроку, увеличь ежемесячный взнос. Даже +2 000 ₽ заметно ускорят прогресс.`
-        : 'Сформулируй конкретную цель с суммой и датой — например, «подушка 150 000 ₽ к Новому году».',
-    },
-    // 3 — Из новостей
-    { emoji: '📰', tag: 'Новости', ...news },
-    // 4 — Совет по накоплению
-    {
-      emoji: '💰',
-      tag: 'Совет по накоплению',
-      ...saving,
-      resultValue: '20%',
-      resultSub: `от дохода — это ≈ ${formatCurrency(savingTarget, true)} в месяц`,
-    },
-    // 5 — Лайфхак
-    { emoji: '💡', tag: 'Лайфхак', ...lifehack },
-  ];
-};
-
 // ─── Slide view ────────────────────────────────────────────────────────────────
 
-const SlideView = ({ slide, index, total }: { slide: Slide; index: number; total: number }) => (
+const SlideView = ({
+  slide,
+  index,
+  total,
+  onAsk,
+}: {
+  slide: Insight;
+  index: number;
+  total: number;
+  onAsk: () => void;
+}) => (
   <div className="h-full w-full flex flex-col items-center px-7 pt-24 pb-28 text-white">
     {/* Картинка */}
     <motion.div
@@ -249,7 +96,17 @@ const SlideView = ({ slide, index, total }: { slide: Slide; index: number; total
           Рекомендация
         </p>
       </div>
-      <p className="text-text-primary text-sm leading-relaxed">{slide.recommendation}</p>
+      <p className="text-text-primary text-sm leading-relaxed mb-3">{slide.recommendation}</p>
+
+      {/* CTA → переход в чат с AI */}
+      <button
+        onClick={onAsk}
+        className="w-full h-12 rounded-2xl text-white font-semibold text-[15px] flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
+        style={{ backgroundColor: BG }}
+      >
+        <span>{slide.cta}</span>
+        <span className="text-lg leading-none">→</span>
+      </button>
     </motion.div>
   </div>
 );
@@ -259,12 +116,13 @@ const SlideView = ({ slide, index, total }: { slide: Slide; index: number; total
 export const AnalyticsModal = () => {
   const user = useUserStore(s => s.user);
   const profile = useFinanceStore(s => s.profile);
+  const ask = useAskAi();
 
   const [visible, setVisible] = useState(false);
   const [index, setIndex] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
-  const slides = buildSlides(profile);
+  const slides = buildInsights(profile);
   const total = slides.length;
 
   useEffect(() => {
@@ -292,6 +150,11 @@ export const AnalyticsModal = () => {
   const next = () => {
     if (index < total - 1) setIndex(i => i + 1);
     else close();
+  };
+
+  // Кнопка инсайта → кладём готовый промт и уводим в чат с AI
+  const askSlide = (slide: Insight) => {
+    ask(slide.prompt, { beforeNavigate: close });
   };
 
   const handleDragEnd = (_: unknown, info: PanInfo) => {
@@ -357,7 +220,12 @@ export const AnalyticsModal = () => {
                 transition={{ type: 'spring', stiffness: 320, damping: 34 }}
                 className="absolute inset-0"
               >
-                <SlideView slide={slides[index]} index={index} total={total} />
+                <SlideView
+                  slide={slides[index]}
+                  index={index}
+                  total={total}
+                  onAsk={() => askSlide(slides[index])}
+                />
               </motion.div>
             </AnimatePresence>
           </motion.div>

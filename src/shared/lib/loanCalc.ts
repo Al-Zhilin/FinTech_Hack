@@ -93,3 +93,110 @@ export function assessAffordability(
 
   return { freeCash, paymentToIncome, level, comfortablePayment, maxPayment };
 }
+
+// ─── Max affordable loan ────────────────────────────────────────────────────────
+// Сколько максимум можно занять, чтобы платёж остался комфортным
+// (≤30% дохода и в пределах свободных денег).
+export interface MaxLoan {
+  comfortablePayment: number; // безопасный платёж в месяц
+  principal: number;          // максимальная сумма кредита под этот платёж
+}
+
+export function maxAffordablePrincipal(
+  income: number,
+  expenses: number,
+  existingCredit: number,
+  annualRate: number,
+  months: number,
+): MaxLoan {
+  const freeCash = income - expenses - existingCredit;
+  const comfortablePayment = Math.max(0, Math.min(income * 0.3, freeCash));
+  const r = annualRate / 100 / 12;
+
+  if (comfortablePayment <= 0) return { comfortablePayment: 0, principal: 0 };
+
+  let principal: number;
+  if (r === 0) {
+    principal = comfortablePayment * months;
+  } else {
+    const pow = Math.pow(1 + r, months);
+    principal = (comfortablePayment * (pow - 1)) / (r * pow);
+  }
+  return { comfortablePayment, principal: Math.round(principal) };
+}
+
+// ─── Refinancing ─────────────────────────────────────────────────────────────────
+export interface RefinanceResult {
+  oldPayment: number;
+  newPayment: number;
+  monthlySaving: number;
+  totalSaving: number;   // экономия за оставшийся срок
+  worthIt: boolean;
+}
+
+export function calcRefinance(
+  balance: number,
+  oldRate: number,
+  newRate: number,
+  monthsLeft: number,
+): RefinanceResult {
+  const oldPayment = calcAnnuity(balance, oldRate, monthsLeft).monthlyPayment;
+  const newPayment = calcAnnuity(balance, newRate, monthsLeft).monthlyPayment;
+  const monthlySaving = oldPayment - newPayment;
+  const totalSaving = monthlySaving * monthsLeft;
+  return {
+    oldPayment,
+    newPayment,
+    monthlySaving,
+    totalSaving,
+    worthIt: monthlySaving > 0 && oldRate - newRate >= 1.5,
+  };
+}
+
+// ─── Early repayment ──────────────────────────────────────────────────────────────
+export interface EarlyRepaymentResult {
+  baseMonths: number;
+  baseInterest: number;
+  newMonths: number;
+  newInterest: number;
+  monthsSaved: number;
+  interestSaved: number;
+}
+
+export function calcEarlyRepayment(
+  balance: number,
+  annualRate: number,
+  months: number,
+  extraMonthly: number,
+): EarlyRepaymentResult {
+  const r = annualRate / 100 / 12;
+  const base = calcAnnuity(balance, annualRate, months);
+  const payment = base.monthlyPayment + extraMonthly;
+
+  let bal = balance;
+  let m = 0;
+  let interestPaid = 0;
+  while (bal > 0 && m < 1200) {
+    const interest = bal * r;
+    let principalPart = payment - interest;
+    if (principalPart <= 0) break; // платёж не покрывает проценты
+    if (principalPart >= bal) {
+      interestPaid += interest;
+      bal = 0;
+      m++;
+      break;
+    }
+    bal -= principalPart;
+    interestPaid += interest;
+    m++;
+  }
+
+  return {
+    baseMonths: months,
+    baseInterest: base.overpayment,
+    newMonths: m,
+    newInterest: interestPaid,
+    monthsSaved: months - m,
+    interestSaved: base.overpayment - interestPaid,
+  };
+}
