@@ -29,6 +29,7 @@ jobs:
           printf 'CA_CERT_PATH=%s\n'      "$CA_CERT_PATH"     >> /var/www/myapp/backend/.env
           printf 'MONGODB_URI=%s\n'       "$MONGODB_URI"      >> /var/www/myapp/backend/.env
           printf 'MONGODB_DB_NAME=%s\n'   "$MONGODB_DB_NAME"  >> /var/www/myapp/backend/.env
+          printf 'AI_SSL_VERIFY=false\n'                     >> /var/www/myapp/backend/.env
 
       - name: Write CA certificate
         run: |

@@ -14,12 +14,15 @@ class Settings(BaseSettings):
 
     AI_SERVICE_URL: str = "https://localhost:8001"
     CA_CERT_PATH: str = "certs/ca.crt"
+    AI_SSL_VERIFY: bool = False
 
     MONGODB_URI: str = "mongodb://localhost:27017"
     MONGODB_DB_NAME: str = "hackathon"
 
     @property
     def httpx_verify(self) -> str | bool:
+        if not self.AI_SSL_VERIFY:
+            return False
         path = Path(self.CA_CERT_PATH)
         return str(path) if path.exists() else False
 
