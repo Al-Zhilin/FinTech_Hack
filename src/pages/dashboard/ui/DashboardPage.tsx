@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useUserStore } from '@/entities/user/model/userStore';
 import { useFinanceStore } from '@/entities/finance/model/financeStore';
@@ -7,6 +7,7 @@ import { Badge } from '@/shared/ui/Badge';
 import { ProgressBar } from '@/shared/ui/ProgressBar';
 import { formatCurrency, getGreeting } from '@/shared/lib/formatters';
 import type { AiInsight, CategorySummary, Goal } from '@/shared/types';
+import { AnalyticsModal } from '@/widgets/AnalyticsModal';
 
 // ─── Stagger animation ─────────────────────────────────────────────────────────
 const item = {
@@ -136,7 +137,7 @@ const CategoryRow = ({ cat }: { cat: CategorySummary }) => {
 
 export const DashboardPage = () => {
   const user = useUserStore(s => s.user);
-  const { profile, isLoading, fetchProfile } = useFinanceStore();
+  const { profile, fetchProfile } = useFinanceStore();
   const [visibleInsights, setVisibleInsights] = useState(profile.insights);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -155,6 +156,7 @@ export const DashboardPage = () => {
   const firstName = user?.name.split(' ')[0] ?? 'Гость';
 
   return (
+    <>
     <motion.div
       className="flex flex-col bg-bg-base min-h-dvh"
       variants={container}
@@ -304,8 +306,8 @@ export const DashboardPage = () => {
         </Card>
       </motion.div>
     </motion.div>
+
+      <AnalyticsModal />
+    </>
   );
 };
-
-// Need useState import
-import { useState } from 'react';
