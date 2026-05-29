@@ -24,6 +24,6 @@ jobs:
 
       - name: Apply nginx config and reload
         run: |
-          cp .github/nginx.conf /etc/nginx/sites-available/myapp
-          ln -sf /etc/nginx/sites-available/myapp /etc/nginx/sites-enabled/myapp
-          nginx -t && systemctl reload nginx
+          sudo cp .github/nginx.conf /etc/nginx/sites-available/myapp
+          sudo ln -sf /etc/nginx/sites-available/myapp /etc/nginx/sites-enabled/myapp
+          sudo nginx -t && sudo systemctl reload nginx
