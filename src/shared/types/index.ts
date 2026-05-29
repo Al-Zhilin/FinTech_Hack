@@ -12,6 +12,7 @@ export type FinancialGoal =
 export interface User {
   id: string;
   name: string;
+  email?: string;
   avatar?: string; // base64 data URL
   income: number;
   goal: FinancialGoal;
@@ -20,10 +21,36 @@ export interface User {
   hasCredits: boolean;
   creditAmount?: number;
   createdAt: string;
+  // Onboarding quiz + derived analysis
+  quiz?: QuizAnswers;
+  analysis?: QuizAnalysis;
   // Settings (optional for backwards-compat with older stored users)
   notificationsEnabled?: boolean;
   darkMode?: boolean;
   language?: 'ru' | 'en';
+}
+
+// ─── Onboarding Quiz Types ───────────────────────────────────────────────────
+
+export interface QuizAnswers {
+  persona: string;                 // q1 — кто вы сейчас
+  income: number;                  // q2 — ежемесячный доход
+  obligatoryCategories: string[];  // q3 — обязательные платежи
+  credits: string;                 // q4 — кредиты / займы
+  moneyLeft: string;               // q5 — остаются ли деньги до зарплаты
+  cushion: string;                 // q6 — подушка безопасности
+  cardAttitude: string;            // q7 — отношение к кредиткам
+  priority: string;                // q8 — что важнее финансово
+  currentGoal: string;             // q9 — финансовая цель прямо сейчас
+}
+
+export interface QuizAnalysis {
+  healthScore: number;     // 0–100, выше = здоровее финансы
+  riskLevel: 'low' | 'medium' | 'high';
+  personaLabel: string;
+  summary: string;
+  tags: string[];
+  recommendations: string[];
 }
 
 // ─── Finance Types ─────────────────────────────────────────────────────────────
