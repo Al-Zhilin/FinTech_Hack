@@ -7,10 +7,13 @@ from app.schemas.daily_action import DailyActionResponse
 router = APIRouter()
 
 
+_DAILY_ACTION_TIMEOUT = httpx.Timeout(connect=10.0, read=60.0, write=10.0, pool=10.0)
+
+
 @router.get("/daily-action/{user_id}", response_model=DailyActionResponse, summary="Get daily action for user")
 async def get_daily_action(user_id: str) -> DailyActionResponse:
     try:
-        async with httpx.AsyncClient(verify=settings.httpx_verify, timeout=10.0, trust_env=False) as client:
+        async with httpx.AsyncClient(verify=settings.httpx_verify, timeout=_DAILY_ACTION_TIMEOUT, trust_env=False) as client:
             response = await client.get(f"{settings.AI_SERVICE_URL}/ai/daily-action/{user_id}")
             response.raise_for_status()
             data = response.json()
