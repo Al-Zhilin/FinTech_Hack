@@ -88,21 +88,43 @@ export const AddTransactionSheet = ({ open, onClose, onAdd, defaultDate }: Props
             <p className="text-sm text-text-secondary text-center">Голосовой ввод не поддерживается в этом браузере. Воспользуйтесь ручным вводом.</p>
           ) : (
             <>
-              <button onClick={() => voice.listening ? voice.stop() : voice.start()}
-                className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${voice.listening ? 'bg-danger text-white animate-pulse' : 'bg-gradient-primary text-white shadow-primary'}`}>
+              <button
+                onClick={() => voice.listening ? voice.stop() : voice.start()}
+                className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${
+                  voice.listening
+                    ? 'bg-danger text-white animate-pulse'
+                    : 'bg-gradient-primary text-white shadow-primary'
+                }`}
+              >
                 <Mic size={32} />
               </button>
+
               <p className="text-sm text-text-tertiary text-center">
-                {voice.listening ? 'Говорите… например «кофе 250»' : 'Нажмите и назовите трату'}
+                {voice.listening
+                  ? 'Говорите… например «кофе 250»'
+                  : voice.transcript
+                    ? 'Нажмите ещё раз, чтобы записать заново'
+                    : 'Нажмите и назовите трату'}
               </p>
-              {voice.transcript && (
+
+              {voice.error && (
+                <div className="w-full bg-danger-light rounded-xl px-4 py-3 text-center">
+                  <p className="text-sm text-danger">{voice.error}</p>
+                </div>
+              )}
+
+              {voice.transcript && !voice.error && (
                 <div className="w-full bg-bg-muted rounded-xl p-4 text-center">
                   <p className="text-sm text-text-secondary mb-1">«{voice.transcript}»</p>
                   <p className="text-lg font-bold text-text-primary">
                     {parsed.title} — {parsed.amount > 0 ? formatCurrency(parsed.amount) : '—'}
                   </p>
+                  {parsed.amount <= 0 && (
+                    <p className="text-xs text-text-tertiary mt-1">Сумма не распознана — попробуйте ещё раз</p>
+                  )}
                 </div>
               )}
+
               <Button size="lg" fullWidth disabled={parsed.amount <= 0} onClick={saveVoice}>
                 Добавить наличный расход
               </Button>
