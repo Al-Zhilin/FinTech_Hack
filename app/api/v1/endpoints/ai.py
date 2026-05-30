@@ -2,6 +2,7 @@ import httpx
 from fastapi import APIRouter, HTTPException
 
 from app.core.config import settings
+from app.schemas.bank_offers import BankOffersRequest, BankOffersResponse
 from app.schemas.cashflow import CashflowCalculateRequest, CashflowResponse
 from app.schemas.daily_action import DailyActionResponse
 from app.schemas.patterns import PatternsResponse
@@ -83,6 +84,25 @@ async def get_patterns(user_id: str) -> PatternsResponse:
             response = await client.get(f"{settings.AI_SERVICE_URL}/ai/patterns/{user_id}")
             response.raise_for_status()
             return PatternsResponse(**response.json())
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"AI service unreachable: {type(exc).__name__}: {exc}")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Unexpected error: {type(exc).__name__}: {exc}")
+
+
+_BANK_OFFERS_TIMEOUT = httpx.Timeout(connect=10.0, read=60.0, write=10.0, pool=10.0)
+
+
+@router.post("/bank-offers", response_model=BankOffersResponse, summary="Get bank loan offers for user")
+async def get_bank_offers(request: BankOffersRequest) -> BankOffersResponse:
+    try:
+        async with httpx.AsyncClient(verify=settings.httpx_verify, timeout=_BANK_OFFERS_TIMEOUT, trust_env=False) as client:
+            response = await client.post(
+                f"{settings.AI_SERVICE_URL}/ai/bank-offers",
+                json=request.model_dump(),
+            )
+            response.raise_for_status()
+            return BankOffersResponse(**response.json())
     except httpx.HTTPError as exc:
         raise HTTPException(status_code=502, detail=f"AI service unreachable: {type(exc).__name__}: {exc}")
     except Exception as exc:
