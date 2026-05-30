@@ -68,6 +68,10 @@ async def calculate_cashflow(request: CashflowCalculateRequest) -> CashflowRespo
             )
             response.raise_for_status()
             return CashflowResponse(**response.json())
+    except httpx.HTTPStatusError as exc:
+        if 400 <= exc.response.status_code < 500:
+            raise HTTPException(status_code=exc.response.status_code, detail=exc.response.json().get("detail", str(exc)))
+        raise HTTPException(status_code=502, detail=f"AI service unreachable: {type(exc).__name__}: {exc}")
     except httpx.HTTPError as exc:
         raise HTTPException(status_code=502, detail=f"AI service unreachable: {type(exc).__name__}: {exc}")
     except Exception as exc:
@@ -90,7 +94,7 @@ async def get_patterns(user_id: str) -> PatternsResponse:
         raise HTTPException(status_code=502, detail=f"Unexpected error: {type(exc).__name__}: {exc}")
 
 
-_BANK_OFFERS_TIMEOUT = httpx.Timeout(connect=10.0, read=60.0, write=10.0, pool=10.0)
+_BANK_OFFERS_TIMEOUT = httpx.Timeout(connect=10.0, read=90.0, write=10.0, pool=10.0)
 
 
 @router.post("/bank-offers", response_model=BankOffersResponse, summary="Get bank loan offers for user")

@@ -10,9 +10,6 @@ from app.schemas.onboarding import OnboardingRequest, OnboardingResponse
 
 router = APIRouter()
 
-_HISTORY_LIMIT = 10
-
-
 def _map_ai_profile_to_user_profile(ai_profile: dict) -> dict:
     finances: dict = ai_profile.get("finances") or {}
     meta: dict = ai_profile.get("meta") or {}
@@ -45,22 +42,10 @@ async def _get_or_create_user(db, login: str) -> dict:
     return user
 
 
-async def _get_history(db, login: str) -> list[dict]:
-    cursor = (
-        db.messages.find({"login": login})
-        .sort("created_at", -1)
-        .limit(_HISTORY_LIMIT)
-    )
-    previous = await cursor.to_list(length=_HISTORY_LIMIT)
-    previous.reverse()
-    return [{"role": msg["role"], "content": msg["content"]} for msg in previous]
-
-
-async def _call_ai_onboarding(login: str, message: str, history: list) -> dict:
+async def _call_ai_onboarding(login: str, message: str) -> dict:
     payload = {
         "user_id": login,
         "message": message,
-        "history": history,
     }
     try:
         async with httpx.AsyncClient(verify=settings.httpx_verify, timeout=60.0, trust_env=False) as client:
@@ -111,7 +96,6 @@ async def _save_profile(db, login: str) -> None:
 async def onboarding_step(request: OnboardingRequest) -> OnboardingResponse:
     db = get_db()
     await _get_or_create_user(db, request.login)
-    history = await _get_history(db, request.login)
 
     await db.messages.insert_one({
         "login": request.login,
@@ -120,7 +104,7 @@ async def onboarding_step(request: OnboardingRequest) -> OnboardingResponse:
         "created_at": datetime.now(timezone.utc),
     })
 
-    ai_data = await _call_ai_onboarding(request.login, request.message, history)
+    ai_data = await _call_ai_onboarding(request.login, request.message)
     await _persist_ai_response(db, request.login, ai_data)
     return OnboardingResponse(**ai_data)
 
@@ -129,7 +113,6 @@ async def onboarding_step(request: OnboardingRequest) -> OnboardingResponse:
 async def stream_onboarding_step(request: OnboardingRequest) -> StreamingResponse:
     db = get_db()
     await _get_or_create_user(db, request.login)
-    history = await _get_history(db, request.login)
 
     await db.messages.insert_one({
         "login": request.login,
@@ -142,7 +125,7 @@ async def stream_onboarding_step(request: OnboardingRequest) -> StreamingRespons
         yield f"event: status\ndata: {json.dumps({'status': 'processing', 'message': 'Обрабатываем ответ...'}, ensure_ascii=False)}\n\n"
 
         try:
-            ai_data = await _call_ai_onboarding(request.login, request.message, history)
+            ai_data = await _call_ai_onboarding(request.login, request.message)
         except HTTPException as exc:
             yield f"event: error\ndata: {json.dumps({'error': exc.detail})}\n\n"
             return

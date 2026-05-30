@@ -14,7 +14,7 @@ class BankOffer(BaseModel):
     rate: float
     loan_months: int
     monthly_payment: float
-    score: int
+    score: float
     logo_url: str
     offer_url: str
 

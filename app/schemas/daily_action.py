@@ -5,3 +5,4 @@ class DailyActionResponse(BaseModel):
     action: str
     category: str
     impact: str
+    error: str | None = None
