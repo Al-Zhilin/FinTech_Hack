@@ -8,6 +8,7 @@ class OnboardingRequest(BaseModel):
 
 class OnboardingResponse(BaseModel):
     question: str | None = None
+    suggested_answers: list[str] = []
     phase: int
     complete: bool
     profile_summary: str | None = None

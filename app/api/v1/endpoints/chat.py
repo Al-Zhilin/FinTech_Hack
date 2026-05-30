@@ -39,7 +39,7 @@ async def _get_history(db, login: str) -> list[dict]:
     )
     previous = await cursor.to_list(length=_HISTORY_LIMIT)
     previous.reverse()
-    return [{"role": msg["role"], "content": msg["content"]} for msg in previous]
+    return [{"role": msg["role"], "text": msg["content"]} for msg in previous]
 
 
 @router.post("/message", response_model=ChatResponse, summary="Send message to AI")
@@ -61,9 +61,8 @@ async def send_message(request: ChatRequest) -> ChatResponse:
     payload = {
         "user_id": ai_user_id,
         "query": request.message,
-        "context": {"user_profile": user_profile},
+        "context": {"user_profile": user_profile, "history": history},
         "mode": "chat",
-        "history": history,
     }
 
     try:
@@ -108,9 +107,8 @@ async def stream_message(request: ChatRequest) -> StreamingResponse:
     payload = {
         "user_id": ai_user_id,
         "query": request.message,
-        "context": {"user_profile": user_profile},
+        "context": {"user_profile": user_profile, "history": history},
         "mode": "chat",
-        "history": history,
     }
 
     async def generate():
