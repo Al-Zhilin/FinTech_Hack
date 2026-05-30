@@ -1,17 +1,22 @@
 # HackathonBack — Backend API
 
-FastAPI-бэкенд для FinTech-приложения: финансовый AI-ассистент с онбордингом и чатом. Написан на Python 3.12+, хранит данные в MongoDB Atlas, общается с внешним AI-сервисом по HTTPS.
+FastAPI-бэкенд PWA приложения. Принимает запросы от фронтенда, управляет данными пользователей в MongoDB и проксирует запросы к внешнему AI-сервису с кешированием ответов.
+
+---
 
 ## Стек технологий
 
-| Технология | Назначение |
-|---|---|
-| **FastAPI** | Веб-фреймворк, автодокументация (Swagger/ReDoc) |
-| **Uvicorn** | ASGI-сервер |
-| **Motor** | Async-драйвер для MongoDB |
-| **httpx** | Async HTTP-клиент для запросов к AI-сервису |
-| **Pydantic Settings** | Конфигурация через `.env` |
-| **MongoDB Atlas** | Облачная БД (`FinTechHack`) |
+| Технология | Версия | Назначение |
+|---|---|---|
+| **Python** | 3.12+ | Язык |
+| **FastAPI** | ≥ 0.115 | Веб-фреймворк, Swagger/ReDoc |
+| **Uvicorn** | ≥ 0.32 | ASGI-сервер |
+| **Motor** | ≥ 3.6 | Async-драйвер MongoDB |
+| **httpx** | ≥ 0.28 | Async HTTP-клиент для AI-сервиса |
+| **Pydantic Settings** | ≥ 2.6 | Конфигурация через `.env` |
+| **MongoDB Atlas** | — | Облачная база данных |
+
+---
 
 ## Быстрый старт
 
@@ -19,184 +24,17 @@ FastAPI-бэкенд для FinTech-приложения: финансовый A
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-copy .env.example .env   # заполнить переменные
+copy .env.example .env    # заполнить переменные
 uvicorn app.main:app --reload
 ```
 
-API-документация: [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger) и [http://localhost:8000/redoc](http://localhost:8000/redoc)
-
-## Структура проекта
-
-```
-app/
-├── main.py                    # Точка входа: приложение, CORS, lifespan
-├── core/
-│   ├── config.py              # Все настройки из .env
-│   └── database.py            # Подключение к MongoDB, создание индексов
-├── api/
-│   └── v1/
-│       ├── router.py          # Агрегирует все роутеры
-│       └── endpoints/
-│           ├── health.py      # GET /health
-│           ├── ai.py          # GET /ai/health
-│           ├── chat.py        # POST /chat/message, /chat/stream
-│           └── onboarding.py  # POST /onboarding/step, /onboarding/stream
-└── schemas/
-    ├── chat.py                # ChatRequest, ChatResponse, AIStructured
-    └── onboarding.py          # OnboardingRequest, OnboardingResponse
-```
-
-## База данных MongoDB
-
-### Коллекция `users`
-
-```json
-{
-  "login": "string (unique)",
-  "profile": {
-    "monthly_income": null,
-    "monthly_expenses": null,
-    "monthly_debt_payments": null,
-    "savings": null,
-    "financial_goal_amount": null,
-    "goals": [],
-    "financial_literacy": null
-  },
-  "onboarding_complete": false,
-  "created_at": "datetime UTC"
-}
-```
-
-Индекс: `login` (unique)
-
-### Коллекция `messages`
-
-```json
-{
-  "login": "string",
-  "role": "user | assistant",
-  "content": "string",
-  "created_at": "datetime UTC"
-}
-```
-
-Индекс: составной `(login, created_at DESC)`
-
-## Эндпоинты
-
-### `GET /api/v1/health`
-
-Проверка работоспособности самого бэкенда.
-
-**Response:**
-```json
-{ "status": "ok", "version": "0.1.0", "timestamp": "2026-05-30T..." }
-```
+| Интерфейс | URL |
+|---|---|
+| Swagger UI | http://localhost:8000/docs |
+| ReDoc | http://localhost:8000/redoc |
+| Базовый путь API | http://localhost:8000/api/v1 |
 
 ---
-
-### `GET /api/v1/ai/health`
-
-Проверка доступности внешнего AI-сервиса. Ожидает от него `{ "status": "ok", "ollama": "up" }`.
-
-**Response:** `200 { "message": "ok, ai is available" }` или `502` если AI недоступен.
-
----
-
-### `POST /api/v1/chat/message`
-
-Отправка сообщения в чат, получение ответа AI одним блоком.
-
-**Поток выполнения:**
-1. Получить/создать пользователя в MongoDB (+ UUID для AI-сервиса)
-2. Загрузить последние 10 сообщений истории
-3. Сохранить сообщение пользователя в `messages`
-4. POST к AI-сервису: `{AI_SERVICE_URL}/ai/process`
-5. Сохранить ответ AI в `messages`
-6. Вернуть ответ клиенту
-
-**Request:**
-```json
-{ "login": "user123", "message": "Как мне накопить на квартиру?" }
-```
-
-**Payload к AI-сервису:**
-```json
-{
-  "user_id": "<UUID>",
-  "query": "Как мне накопить на квартиру?",
-  "context": { "user_profile": { "...профиль..." } },
-  "mode": "chat",
-  "history": [ "...10 последних сообщений..." ]
-}
-```
-
-**Response:**
-```json
-{
-  "text": "Текст ответа",
-  "structured": {
-    "summary": "...",
-    "recommendations": ["..."],
-    "risks": ["..."]
-  },
-  "sources": [],
-  "intent": "question",
-  "error": null
-}
-```
-
----
-
-### `POST /api/v1/chat/stream`
-
-То же, что `/chat/message`, но ответ передаётся через **Server-Sent Events (SSE)**.
-
-- Media type: `text/event-stream`
-- Каждое событие: `data: {...json...}\n\n`
-- Полный ответ сохраняется в MongoDB после завершения стрима
-- Таймауты: connect=10s, read=без ограничения, write=10s
-
----
-
-### `POST /api/v1/onboarding/step`
-
-Один шаг финансового онбординга. AI задаёт вопросы для построения профиля пользователя.
-
-**Поток выполнения:**
-1. Получить/создать пользователя
-2. Загрузить историю сообщений
-3. Сохранить сообщение пользователя
-4. POST к AI-сервису: `{AI_SERVICE_URL}/ai/onboarding`
-5. Если AI вернул `complete: true` — GET статус/профиль с `{AI_SERVICE_URL}/ai/onboarding/{uuid}/status`, сохранить профиль, выставить `onboarding_complete = true`
-6. Вернуть ответ
-
-**Request:**
-```json
-{ "login": "user123", "message": "Моя зарплата 80 000 рублей" }
-```
-
-**Response:**
-```json
-{
-  "question": "Следующий вопрос от AI",
-  "phase": 2,
-  "complete": false,
-  "profile_summary": null,
-  "error": null
-}
-```
-
-Когда `complete: true` — профиль пользователя записан в MongoDB.
-
----
-
-### `POST /api/v1/onboarding/stream`
-
-SSE-версия онбординга. Порядок событий в стриме:
-
-1. `event: status` — сразу при старте (сигнал что запрос принят)
-2. `event: result` — JSON с ответом AI после его получения
 
 ## Конфигурация (`.env`)
 
@@ -207,34 +45,390 @@ SSE-версия онбординга. Порядок событий в стри
 | `DEBUG` | `false` | Debug-режим |
 | `ALLOWED_ORIGINS` | `["http://localhost:3000"]` | CORS |
 | `AI_SERVICE_URL` | `http://localhost:8001` | URL внешнего AI-сервиса |
-| `CA_CERT_PATH` | `certs/ca.crt` | Путь к CA-сертификату для TLS |
-| `AI_SSL_VERIFY` | `false` | Проверять ли SSL AI-сервиса |
+| `CA_CERT_PATH` | `certs/ca.crt` | Путь к CA-сертификату |
+| `AI_SSL_VERIFY` | `false` | Проверка SSL AI-сервиса |
 | `MONGODB_URI` | `mongodb://localhost:27017` | URI MongoDB |
 | `MONGODB_DB_NAME` | `hackathon` | Имя базы данных |
 
-## Архитектура взаимодействия
+---
+
+## Архитектура
 
 ```
-Фронтенд (localhost:3000)
-        │
-        │ HTTP / SSE
-        ▼
-FastAPI Backend (localhost:8000)
-        │
-        ├─► MongoDB Atlas ─── хранение пользователей и сообщений
-        │
-        └─► AI-сервис (внешний хост)
-                ├── POST /ai/process                   ← чат
-                ├── POST /ai/onboarding                ← онбординг
-                └── GET  /ai/onboarding/{id}/status    ← финальный профиль
+Фронтенд  ──HTTP/SSE──►  FastAPI Backend (:8000)
+                              │
+                    ┌─────────┴──────────┐
+                    │                    │
+              MongoDB Atlas          AI-сервис (:8001, HTTPS)
+              ┌──────────┐          ┌────────────────────────┐
+              │ users    │          │ POST /ai/process       │
+              │ messages │          │ POST /ai/stream        │
+              │ ai_cache │          │ POST /ai/onboarding    │
+              └──────────┘          │ GET  /ai/daily-action  │
+                                    │ GET  /ai/cashflow      │
+                                    │ GET  /ai/patterns      │
+                                    │ POST /ai/bank-offers   │
+                                    │ POST /ai/cashflow/calc │
+                                    └────────────────────────┘
 ```
 
-## Ключевые технические особенности
+**Поток запроса:** `main.py` → `api/v1/router.py` → `endpoints/<модуль>.py`
 
-- **Async I/O везде** — Motor + httpx, нет блокирующих операций
-- **Пользователь создаётся автоматически** при первом обращении по `login`
-- **UUID для AI-сервиса** генерируется один раз и хранится в профиле — AI-сервис ведёт свою сессию по нему
-- **История чата** — передаётся в AI последние 10 сообщений при каждом запросе
-- **Профиль строится постепенно** — AI сам решает когда онбординг завершён (`complete: true`)
-- **SSE-стриминг** — оба ключевых потока (чат и онбординг) имеют streaming-версии
-- **SSL** — поддерживает кастомный CA-сертификат для self-hosted AI-сервиса
+---
+
+## Структура проекта
+
+```
+app/
+├── main.py                        # FastAPI app, CORS, lifespan, запуск планировщика
+├── core/
+│   ├── config.py                  # Настройки через pydantic-settings
+│   ├── database.py                # Подключение к MongoDB, создание индексов
+│   ├── cache.py                   # Чтение/запись кеша AI-ответов в ai_cache
+│   ├── scheduler.py               # Фоновое обновление кеша (старт + раз в час)
+│   └── fallbacks.py               # Математический расчёт кешфлоу без AI
+├── api/
+│   └── v1/
+│       ├── router.py              # Агрегирует все роутеры
+│       └── endpoints/
+│           ├── health.py          # GET /health
+│           ├── ai.py              # AI-эндпоинты (daily-action, cashflow, patterns, bank-offers)
+│           ├── chat.py            # POST /chat/message, /chat/stream
+│           └── onboarding.py      # POST /onboarding/step, /onboarding/stream
+└── schemas/
+    ├── chat.py                    # ChatRequest, ChatResponse
+    ├── onboarding.py              # OnboardingRequest, OnboardingResponse
+    ├── cashflow.py                # CashflowCalculateRequest, CashflowResponse
+    ├── patterns.py                # PatternsResponse
+    ├── daily_action.py            # DailyActionResponse
+    └── bank_offers.py             # BankOffersRequest, BankOffersResponse
+```
+
+---
+
+## База данных
+
+### Коллекция `users`
+
+```json
+{
+  "login": "user@example.com",
+  "profile": {
+    "monthly_income": 120000.0,
+    "monthly_expenses": 80000.0,
+    "monthly_debt_payments": 10000.0,
+    "savings": 200000.0,
+    "financial_goal_amount": 500000.0,
+    "goals": ["накопить на квартиру"],
+    "financial_literacy": "medium"
+  },
+  "onboarding_complete": true,
+  "created_at": "2026-05-30T10:00:00Z"
+}
+```
+
+Индексы: `login` (unique)
+
+### Коллекция `messages`
+
+```json
+{
+  "login": "user@example.com",
+  "role": "user | assistant",
+  "content": "Текст сообщения",
+  "created_at": "2026-05-30T10:00:00Z"
+}
+```
+
+Индексы: составной `(login, created_at DESC)`
+
+### Коллекция `ai_cache`
+
+```json
+{
+  "user_id": "user@example.com",
+  "endpoint": "daily_action | patterns | cashflow | bank_offers",
+  "response": { "...ответ AI-сервиса..." },
+  "cached_at": "2026-05-30T10:00:00Z"
+}
+```
+
+Индексы: составной уникальный `(user_id, endpoint)`
+
+---
+
+## Система кеширования
+
+При каждом **успешном** ответе от AI-сервиса бэкенд сохраняет его в `ai_cache`. При недоступности AI-сервиса — отдаёт кешированный ответ вместо ошибки.
+
+**Фоновый планировщик** (`scheduler.py`) запускается вместе с приложением:
+- через 5 секунд после старта обходит всех пользователей и обновляет кеш
+- затем повторяет каждый час
+
+**Триггер после онбординга** — как только пользователь завершает онбординг, его `daily-action` и `patterns` обновляются немедленно (не ждут часового цикла).
+
+| Эндпоинт | Кеш | При недоступности AI |
+|---|---|---|
+| `daily-action`, `patterns`, `cashflow`, `bank-offers` | Сохраняется | Кеш → при пустом кеше: 503 |
+| `cashflow/calculate` | — | Математический расчёт по входным данным |
+| `chat`, `onboarding` | — | 503 / SSE `event: error` |
+
+---
+
+## API Reference
+
+### `GET /api/v1/health`
+
+Проверка работоспособности бэкенда.
+
+```json
+{ "status": "ok", "version": "0.1.0", "timestamp": "2026-05-30T10:00:00Z" }
+```
+
+---
+
+### `GET /api/v1/ai/health`
+
+Проверка доступности AI-сервиса, Ollama и Mongo на удаленном AI сервере.
+
+```json
+{ "message": "ok, ai is available" }
+```
+
+Возвращает `502` если AI-сервис недоступен или Ollama не запущена.
+
+---
+
+### `GET /api/v1/ai/queue/status`
+
+Состояние очереди AI-сервиса.
+
+```json
+{ "queue_size": 2, "processing": true }
+```
+
+---
+
+### `GET /api/v1/ai/daily-action/{login}`
+
+Персональная карточка-совет на сегодня. Меняется раз в сутки, детерминирована по пользователю.
+
+```json
+{
+  "action": "Переведите 6 000 ₽ на накопления прямо сейчас",
+  "category": "накопления",
+  "impact": "+6 000 ₽ к цели — через 50 месяцев достигнете квартиры",
+  "error": null
+}
+```
+
+---
+
+### `GET /api/v1/ai/cashflow/{login}`
+
+Детальный прогноз денежного потока до зарплаты (поднёвной). Данные берутся из профиля пользователя.
+
+```json
+{
+  "projected_balance": -9000.0,
+  "will_be_negative": true,
+  "shortage": 9000.0,
+  "days_to_salary": 18,
+  "daily_avg_spend": 833.33,
+  "danger_day": 12,
+  "verdict": "Денег не хватит до зарплаты — дефицит 9 000 ₽",
+  "daily_burn": 833.33,
+  "forecast": [{ "day": 0, "balance": 15000.0, "event": null }],
+  "risk_events": [],
+  "critical_day": 12
+}
+```
+
+---
+
+### `POST /api/v1/ai/cashflow/calculate`
+
+Расчёт кешфлоу по актуальному балансу (без LLM, только математика). При недоступности AI — возвращает собственный расчёт.
+
+**Request:**
+```json
+{ "user_id": "user@example.com", "current_balance": 15000.0, "days_to_salary": 18 }
+```
+
+**Response:** аналогичен `GET /ai/cashflow/{login}`.
+
+Ошибки: `422` если онбординг не пройден.
+
+---
+
+### `GET /api/v1/ai/patterns/{login}`
+
+Анализ паттернов трат пользователя.
+
+```json
+{
+  "pattern_label": "долговая нагрузка",
+  "expense_ratio": 0.72,
+  "debt_ratio": 0.35,
+  "free_ratio": 0.0,
+  "top_category": "housing",
+  "insight": "Долговая нагрузка занимает 35% дохода — выше безопасного порога в 30%.",
+  "breakdown": { "housing": 25000.0, "debt": 15000.0 }
+}
+```
+
+---
+
+### `POST /api/v1/ai/bank-offers`
+
+Подбор банковских предложений по кредиту через Tavily-поиск + LLM-парсинг. Офферы отсортированы по `score` (0–100).
+
+**Request:**
+```json
+{
+  "user_id": "user@example.com",
+  "loan_amount": 500000,
+  "loan_rate": 12.5,
+  "loan_months": 24
+}
+```
+
+**Response:**
+```json
+{
+  "offers": [
+    {
+      "bank_name": "Сбербанк",
+      "domain": "sber.ru",
+      "rate": 12.5,
+      "loan_months": 24,
+      "monthly_payment": 23549.12,
+      "score": 100.0,
+      "logo_url": "https://img.logo.dev/sber.ru?token=free",
+      "offer_url": "https://sber.ru/credits/consumer"
+    }
+  ],
+  "search_query": "банк кредит наличными ставка 500000 рублей 24 месяцев"
+}
+```
+
+---
+
+### `POST /api/v1/chat/message`
+
+Синхронный чат с AI-ассистентом. История последних 10 сообщений автоматически передаётся в контексте.
+
+**Request:**
+```json
+{ "login": "user@example.com", "message": "Стоит ли мне брать кредит на машину?" }
+```
+
+**Response:**
+```json
+{
+  "text": "С учётом ваших данных кредитная нагрузка составит 31.4%...",
+  "table": {
+    "headers": ["Вариант", "Платёж/мес", "Переплата"],
+    "rows": [["Текущий кредит", "10 082 ₽", "41 961 ₽"]]
+  },
+  "structured": {
+    "summary": "Нагрузка повышенная.",
+    "recommendations": ["Рассмотрите меньшую сумму"],
+    "risks": ["Рост долга при потере дохода"],
+    "calculator_result": {}
+  },
+  "sources": [],
+  "intent": "advice",
+  "error": null
+}
+```
+
+---
+
+### `POST /api/v1/chat/stream`
+
+Стриминговый чат через **Server-Sent Events**. Позволяет показывать прогресс в реальном времени.
+
+`Content-Type: text/event-stream`
+
+```
+event: status
+data: {"status": "queued", "message": "Запрос принят..."}
+
+event: status
+data: {"status": "analyzing", "message": "Анализирую данные..."}
+
+event: result
+data: {"text": "...", "table": null, "structured": {...}, "intent": "advice", "error": null}
+```
+
+При ошибке подключения к AI:
+```
+event: error
+data: {"error": "Нет соединения с AI-сервером"}
+```
+
+---
+
+### `POST /api/v1/onboarding/step`
+
+Один шаг диалогового онбординга (всего ~9 вопросов, 3 фазы). AI строит финансовый профиль пользователя.
+
+**Request:**
+```json
+{ "login": "user@example.com", "message": "Работаю в найме, доход 120 000 ₽" }
+```
+
+**Response — диалог продолжается:**
+```json
+{
+  "question": "Как часто ходишь в кафе или рестораны?",
+  "suggested_answers": ["Редко", "Пару раз в месяц", "Часто"],
+  "phase": 2,
+  "complete": false,
+  "profile_summary": null
+}
+```
+
+**Response — онбординг завершён:**
+```json
+{
+  "question": null,
+  "suggested_answers": [],
+  "phase": 3,
+  "complete": true,
+  "profile_summary": "Доход ~120 000 ₽/мес. Цель: накопить на квартиру."
+}
+```
+
+При `complete: true` профиль сохраняется в MongoDB и немедленно прогревается кеш AI-данных пользователя.
+
+---
+
+### `POST /api/v1/onboarding/stream`
+
+SSE-версия онбординга.
+
+```
+event: status
+data: {"status": "processing", "message": "Обрабатываем ответ..."}
+
+event: result
+data: {"question": "...", "suggested_answers": [...], "phase": 1, "complete": false}
+```
+
+---
+
+## Ключевые технические решения
+
+**Идентификация пользователей** — в качестве `user_id` везде используется `login` (строка от фронтенда). Никаких внутренних UUID.
+
+**Санация профиля** — перед отправкой в AI-сервис числовые поля профиля (`monthly_income`, `savings` и др.) принудительно приводятся к `float | null`. Защита от некорректных данных, которые AI онбординг-сервис может вернуть в виде строк.
+
+**История чата** — последние 10 сообщений передаются в каждый запрос к `/ai/process` и `/ai/stream` в формате `[{"role": "user|assistant", "text": "..."}]`.
+
+**Обработка ошибок** — сетевые ошибки (`ConnectError`, `ReadTimeout` и т.д.) возвращают `503`. Ошибки протокола/статуса (`HTTPStatusError`) — `502`. Кешированный ответ используется прозрачно, без индикации фолбэка клиенту.
+
+**SSL** — поддерживается кастомный CA-сертификат (`CA_CERT_PATH`) для self-hosted AI-сервиса. В dev-режиме проверка отключается (`AI_SSL_VERIFY=false`).
+
+**Async I/O везде** — Motor + httpx, нет блокирующих операций. Фоновый планировщик кеша запускается через `asyncio.create_task` в lifespan.
