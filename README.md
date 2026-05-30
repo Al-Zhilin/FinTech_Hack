@@ -53,7 +53,6 @@ app/
 ```json
 {
   "login": "string (unique)",
-  "ai_user_id": "UUID (автогенерация)",
   "profile": {
     "monthly_income": null,
     "monthly_expenses": null,

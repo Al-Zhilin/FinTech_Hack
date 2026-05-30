@@ -1,7 +1,5 @@
 import json
 from datetime import datetime, timezone
-from uuid import uuid4
-
 import httpx
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -39,7 +37,6 @@ async def _get_or_create_user(db, login: str) -> dict:
     if user is None:
         user = {
             "login": login,
-            "ai_user_id": str(uuid4()),
             "profile": {},
             "onboarding_complete": False,
             "created_at": datetime.now(timezone.utc),
@@ -59,9 +56,9 @@ async def _get_history(db, login: str) -> list[dict]:
     return [{"role": msg["role"], "content": msg["content"]} for msg in previous]
 
 
-async def _call_ai_onboarding(ai_user_id: str, message: str, history: list) -> dict:
+async def _call_ai_onboarding(login: str, message: str, history: list) -> dict:
     payload = {
-        "user_id": ai_user_id,
+        "user_id": login,
         "message": message,
         "history": history,
     }
@@ -76,7 +73,7 @@ async def _call_ai_onboarding(ai_user_id: str, message: str, history: list) -> d
         raise HTTPException(status_code=502, detail=f"Unexpected error: {type(exc).__name__}: {exc}")
 
 
-async def _persist_ai_response(db, login: str, ai_user_id: str, ai_data: dict) -> None:
+async def _persist_ai_response(db, login: str, ai_data: dict) -> None:
     if ai_data.get("question"):
         await db.messages.insert_one({
             "login": login,
@@ -85,14 +82,14 @@ async def _persist_ai_response(db, login: str, ai_user_id: str, ai_data: dict) -
             "created_at": datetime.now(timezone.utc),
         })
     if ai_data.get("complete"):
-        await _save_profile(db, login, ai_user_id)
+        await _save_profile(db, login)
 
 
-async def _save_profile(db, login: str, ai_user_id: str) -> None:
+async def _save_profile(db, login: str) -> None:
     try:
         async with httpx.AsyncClient(verify=settings.httpx_verify, timeout=5.0, trust_env=False) as client:
             response = await client.get(
-                f"{settings.AI_SERVICE_URL}/ai/onboarding/{ai_user_id}/status"
+                f"{settings.AI_SERVICE_URL}/ai/onboarding/{login}/status"
             )
             response.raise_for_status()
             status_data: dict = response.json()
@@ -113,8 +110,7 @@ async def _save_profile(db, login: str, ai_user_id: str) -> None:
 @router.post("/step", response_model=OnboardingResponse, summary="Onboarding step")
 async def onboarding_step(request: OnboardingRequest) -> OnboardingResponse:
     db = get_db()
-    user = await _get_or_create_user(db, request.login)
-    ai_user_id: str = user["ai_user_id"]
+    await _get_or_create_user(db, request.login)
     history = await _get_history(db, request.login)
 
     await db.messages.insert_one({
@@ -124,16 +120,15 @@ async def onboarding_step(request: OnboardingRequest) -> OnboardingResponse:
         "created_at": datetime.now(timezone.utc),
     })
 
-    ai_data = await _call_ai_onboarding(ai_user_id, request.message, history)
-    await _persist_ai_response(db, request.login, ai_user_id, ai_data)
+    ai_data = await _call_ai_onboarding(request.login, request.message, history)
+    await _persist_ai_response(db, request.login, ai_data)
     return OnboardingResponse(**ai_data)
 
 
 @router.post("/stream", summary="Onboarding step with SSE streaming")
 async def stream_onboarding_step(request: OnboardingRequest) -> StreamingResponse:
     db = get_db()
-    user = await _get_or_create_user(db, request.login)
-    ai_user_id: str = user["ai_user_id"]
+    await _get_or_create_user(db, request.login)
     history = await _get_history(db, request.login)
 
     await db.messages.insert_one({
@@ -147,12 +142,12 @@ async def stream_onboarding_step(request: OnboardingRequest) -> StreamingRespons
         yield f"event: status\ndata: {json.dumps({'status': 'processing', 'message': 'Обрабатываем ответ...'}, ensure_ascii=False)}\n\n"
 
         try:
-            ai_data = await _call_ai_onboarding(ai_user_id, request.message, history)
+            ai_data = await _call_ai_onboarding(request.login, request.message, history)
         except HTTPException as exc:
             yield f"event: error\ndata: {json.dumps({'error': exc.detail})}\n\n"
             return
 
-        await _persist_ai_response(db, request.login, ai_user_id, ai_data)
+        await _persist_ai_response(db, request.login, ai_data)
         yield f"event: result\ndata: {json.dumps(ai_data, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")

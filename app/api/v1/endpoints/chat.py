@@ -1,7 +1,5 @@
 import json
 from datetime import datetime, timezone
-from uuid import uuid4
-
 import httpx
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -22,7 +20,6 @@ async def _get_or_create_user(db, login: str) -> dict:
     if user is None:
         user = {
             "login": login,
-            "ai_user_id": str(uuid4()),
             "profile": {},
             "onboarding_complete": False,
             "created_at": datetime.now(timezone.utc),
@@ -47,7 +44,6 @@ async def send_message(request: ChatRequest) -> ChatResponse:
     db = get_db()
     user = await _get_or_create_user(db, request.login)
 
-    ai_user_id: str = user["ai_user_id"] 
     user_profile: dict = user.get("profile") or {}
     history = await _get_history(db, request.login)
 
@@ -59,7 +55,7 @@ async def send_message(request: ChatRequest) -> ChatResponse:
     })
 
     payload = {
-        "user_id": ai_user_id,
+        "user_id": request.login,
         "query": request.message,
         "context": {"user_profile": user_profile, "history": history},
         "mode": "chat",
@@ -93,7 +89,6 @@ async def stream_message(request: ChatRequest) -> StreamingResponse:
     db = get_db()
     user = await _get_or_create_user(db, request.login)
 
-    ai_user_id: str = user["ai_user_id"]
     user_profile: dict = user.get("profile") or {}
     history = await _get_history(db, request.login)
 
@@ -105,7 +100,7 @@ async def stream_message(request: ChatRequest) -> StreamingResponse:
     })
 
     payload = {
-        "user_id": ai_user_id,
+        "user_id": request.login,
         "query": request.message,
         "context": {"user_profile": user_profile, "history": history},
         "mode": "chat",
