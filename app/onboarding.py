@@ -171,6 +171,19 @@ async def process_onboarding(user_id: str, user_message: str, history: list[dict
     }
 
 
+def _to_float(v: object) -> float | None:
+    if v is None:
+        return None
+    if isinstance(v, (int, float)):
+        return float(v)
+    if isinstance(v, str):
+        try:
+            return float(v.replace(",", ".").strip())
+        except (ValueError, TypeError):
+            return None
+    return None
+
+
 def _build_profile(history: list[dict], last_extracted: dict) -> dict:
     """Merge all extracted data from history into a profile."""
     merged: dict = {}
@@ -187,14 +200,14 @@ def _build_profile(history: list[dict], last_extracted: dict) -> dict:
             "transport": merged.get("transport", "public"),
         },
         "finances": {
-            "monthly_income": merged.get("monthly_income"),
-            "monthly_expenses_estimate": merged.get("monthly_expenses_estimate"),
-            "monthly_debt_payments": merged.get("monthly_debt_payments"),
+            "monthly_income":          _to_float(merged.get("monthly_income")),
+            "monthly_expenses_estimate": _to_float(merged.get("monthly_expenses_estimate")),
+            "monthly_debt_payments":   _to_float(merged.get("monthly_debt_payments")),
             "has_mortgage": merged.get("has_mortgage", False),
-            "has_loans": merged.get("has_loans", False),
-            "savings": merged.get("savings"),
-            "financial_goal": merged.get("financial_goal"),
-            "financial_goal_amount": merged.get("financial_goal_amount"),
+            "has_loans":    merged.get("has_loans", False),
+            "savings":              _to_float(merged.get("savings")),
+            "financial_goal":        merged.get("financial_goal"),
+            "financial_goal_amount": _to_float(merged.get("financial_goal_amount")),
         },
         "meta": {
             "financial_literacy": merged.get("financial_literacy", "medium"),

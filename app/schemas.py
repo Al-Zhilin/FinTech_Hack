@@ -1,5 +1,18 @@
 from typing import Any, Literal, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+def _to_float(v: Any) -> float | None:
+    if v is None:
+        return None
+    if isinstance(v, (int, float)):
+        return float(v)
+    if isinstance(v, str):
+        try:
+            return float(v.replace(",", ".").strip())
+        except (ValueError, TypeError):
+            return None
+    return None
 
 
 class UserProfile(BaseModel):
@@ -17,6 +30,15 @@ class UserProfile(BaseModel):
     goals: list[str] = []
     portfolio: dict[str, Any] = {}
     risk_tolerance: Literal["low", "medium", "high"] | None = None
+
+    @field_validator(
+        "monthly_income", "monthly_expenses", "savings",
+        "monthly_debt_payments", "financial_goal_amount", "current_balance",
+        mode="before",
+    )
+    @classmethod
+    def coerce_float(cls, v: Any) -> float | None:
+        return _to_float(v)
 
 
 class ContextModel(BaseModel):
