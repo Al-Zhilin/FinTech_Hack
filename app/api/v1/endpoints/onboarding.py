@@ -50,15 +50,10 @@ async def _get_or_create_user(db, login: str) -> dict:
 
 async def _call_ai_onboarding(login: str, message: str) -> dict:
     payload = {"user_id": login, "message": message}
-    try:
-        async with httpx.AsyncClient(verify=settings.httpx_verify, timeout=60.0, trust_env=False) as client:
-            response = await client.post(f"{settings.AI_SERVICE_URL}/ai/onboarding", json=payload)
-            response.raise_for_status()
-            return response.json()
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"AI service error: {type(exc).__name__}: {exc}")
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Unexpected error: {type(exc).__name__}: {exc}")
+    async with httpx.AsyncClient(verify=settings.httpx_verify, timeout=60.0, trust_env=False) as client:
+        response = await client.post(f"{settings.AI_SERVICE_URL}/ai/onboarding", json=payload)
+        response.raise_for_status()
+        return response.json()
 
 
 async def _persist_ai_response(db, login: str, ai_data: dict) -> None:
@@ -111,8 +106,12 @@ async def onboarding_step(request: OnboardingRequest) -> OnboardingResponse:
 
     try:
         ai_data = await _call_ai_onboarding(request.login, request.message)
-    except Exception:
+    except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout, httpx.WriteTimeout, httpx.PoolTimeout):
         raise HTTPException(status_code=503, detail=_NO_CONNECTION)
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=502, detail=f"AI server returned {exc.response.status_code}")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"AI service error: {type(exc).__name__}")
 
     await _persist_ai_response(db, request.login, ai_data)
     return OnboardingResponse(**ai_data)
@@ -135,8 +134,11 @@ async def stream_onboarding_step(request: OnboardingRequest) -> StreamingRespons
 
         try:
             ai_data = await _call_ai_onboarding(request.login, request.message)
-        except Exception:
+        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout, httpx.WriteTimeout, httpx.PoolTimeout):
             yield f"event: error\ndata: {json.dumps({'error': _NO_CONNECTION}, ensure_ascii=False)}\n\n"
+            return
+        except Exception as exc:
+            yield f"event: error\ndata: {json.dumps({'error': f'AI service error: {type(exc).__name__}'}, ensure_ascii=False)}\n\n"
             return
 
         await _persist_ai_response(db, request.login, ai_data)

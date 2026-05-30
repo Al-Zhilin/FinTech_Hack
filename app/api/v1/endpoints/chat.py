@@ -13,6 +13,7 @@ router = APIRouter()
 
 _HISTORY_LIMIT = 10
 _STREAM_TIMEOUT = httpx.Timeout(connect=10.0, read=None, write=10.0, pool=10.0)
+_CHAT_TIMEOUT = httpx.Timeout(connect=10.0, read=180.0, write=10.0, pool=10.0)
 _NO_CONNECTION = "Нет соединения с AI-сервером"
 
 
@@ -63,12 +64,16 @@ async def send_message(request: ChatRequest) -> ChatResponse:
     }
 
     try:
-        async with httpx.AsyncClient(verify=settings.httpx_verify, timeout=120.0, trust_env=False) as client:
+        async with httpx.AsyncClient(verify=settings.httpx_verify, timeout=_CHAT_TIMEOUT, trust_env=False) as client:
             response = await client.post(f"{settings.AI_SERVICE_URL}/ai/process", json=payload)
             response.raise_for_status()
             ai_data: dict = response.json()
-    except Exception:
+    except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout, httpx.WriteTimeout, httpx.PoolTimeout):
         raise HTTPException(status_code=503, detail=_NO_CONNECTION)
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=502, detail=f"AI server returned {exc.response.status_code}")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"AI service error: {type(exc).__name__}")
 
     await db.messages.insert_one({
         "login": request.login,
@@ -124,8 +129,10 @@ async def stream_message(request: ChatRequest) -> StreamingResponse:
                                     result_text = data.get("text", "")
                             except json.JSONDecodeError:
                                 pass
-        except Exception:
+        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout, httpx.WriteTimeout, httpx.PoolTimeout):
             yield f"event: error\ndata: {json.dumps({'error': _NO_CONNECTION}, ensure_ascii=False)}\n\n"
+        except Exception as exc:
+            yield f"event: error\ndata: {json.dumps({'error': f'AI service error: {type(exc).__name__}'}, ensure_ascii=False)}\n\n"
         finally:
             if result_text:
                 await db.messages.insert_one({
