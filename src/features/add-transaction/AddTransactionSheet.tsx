@@ -85,7 +85,21 @@ export const AddTransactionSheet = ({ open, onClose, onAdd, defaultDate }: Props
       {mode === 'voice' && (
         <div className="flex flex-col items-center gap-4 py-2">
           {!voice.supported ? (
-            <p className="text-sm text-text-secondary text-center">Голосовой ввод не поддерживается в этом браузере. Воспользуйтесь ручным вводом.</p>
+            <div className="flex flex-col items-center gap-3 text-center py-2">
+              <span className="text-4xl">{voice.notSecure ? '🔒' : '🎙️'}</span>
+              <p className="text-sm font-semibold text-text-primary">
+                {voice.notSecure ? 'Требуется HTTPS' : 'Браузер не поддерживает'}
+              </p>
+              <p className="text-sm text-text-secondary leading-snug">
+                {voice.notSecure
+                  ? 'Голосовой ввод работает только на защищённых сайтах (HTTPS). Откройте сайт по https:// или воспользуйтесь ручным вводом.'
+                  : 'Голосовой ввод не поддерживается в этом браузере. Попробуйте Chrome или Safari.'}
+              </p>
+              <button onClick={() => setMode('manual')}
+                className="text-sm font-semibold text-primary mt-1">
+                Перейти к ручному вводу →
+              </button>
+            </div>
           ) : (
             <>
               <button

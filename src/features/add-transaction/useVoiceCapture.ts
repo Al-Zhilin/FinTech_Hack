@@ -15,8 +15,11 @@ export const useVoiceCapture = () => {
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [supported, setSupported] = useState(true);
+  const [notSecure, setNotSecure] = useState(false);
 
   useEffect(() => {
+    // Microphone API requires a secure context (HTTPS / localhost)
+    if (!window.isSecureContext) { setSupported(false); setNotSecure(true); return; }
     const SRClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SRClass) { setSupported(false); return; }
     srClassRef.current = SRClass;
@@ -71,6 +74,7 @@ export const useVoiceCapture = () => {
 
   return {
     supported,
+    notSecure,
     listening,
     transcript,
     error,
