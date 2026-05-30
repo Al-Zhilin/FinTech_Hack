@@ -1,6 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/shared/ui/Button';
 import { onboardingStep, extractOptions, stripOptions } from '@/shared/api/onboarding';
 
 interface AIOnboardingProps {
@@ -82,6 +81,13 @@ export const AIOnboarding = ({ userLogin, onBack, onComplete }: AIOnboardingProp
     }
   }, [userLogin, question, isLoading]);
 
+  // Небольшая задержка перед переходом на plan-экран — даём пользователю увидеть анимацию
+  useEffect(() => {
+    if (!isComplete) return;
+    const id = setTimeout(() => onComplete(summary), 1400);
+    return () => clearTimeout(id);
+  }, [isComplete, summary, onComplete]);
+
   const progress = isComplete ? 1 : Math.min((questionNum - 1) / TOTAL_QUESTIONS, 0.95);
 
   return (
@@ -114,14 +120,20 @@ export const AIOnboarding = ({ userLogin, onBack, onComplete }: AIOnboardingProp
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-5 pt-2 pb-6 flex flex-col">
         {isComplete ? (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-            className="flex-1 flex flex-col items-center justify-center text-center gap-5">
-            <div className="w-20 h-20 rounded-full bg-gradient-primary flex items-center justify-center text-4xl shadow-primary">🎉</div>
-            <div>
-              <h2 className="text-2xl font-bold text-text-primary mb-2">Профиль готов!</h2>
-              <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap max-w-xs">{summary}</p>
-            </div>
-            <Button size="lg" fullWidth onClick={() => onComplete(summary)}>Войти в приложение</Button>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+            className="flex-1 flex flex-col items-center justify-center text-center gap-4">
+            <motion.div
+              initial={{ scale: 0.5 }}
+              animate={{ scale: [0.5, 1.15, 1] }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              className="w-20 h-20 rounded-full bg-gradient-primary flex items-center justify-center text-4xl shadow-primary"
+            >
+              ✅
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+              <h2 className="text-2xl font-bold text-text-primary mb-1">Готово!</h2>
+              <p className="text-sm text-text-secondary">Составляем ваш персональный план…</p>
+            </motion.div>
           </motion.div>
         ) : (
           <>

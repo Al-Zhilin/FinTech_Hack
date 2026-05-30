@@ -24,6 +24,7 @@ export interface User {
   // Onboarding quiz + derived analysis
   quiz?: QuizAnswers;
   analysis?: QuizAnalysis;
+  profileSummary?: string;   // AI-профиль из онбординга
   // Settings (optional for backwards-compat with older stored users)
   notificationsEnabled?: boolean;
   darkMode?: boolean;

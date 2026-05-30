@@ -284,6 +284,66 @@ const CategoryRow = ({ cat }: { cat: CategorySummary }) => {
   );
 };
 
+// ─── Personal Plan block ───────────────────────────────────────────────────────
+
+const parsePlanItems = (summary: string): string[] =>
+  summary
+    .split(/(?:\n|(?<=\.)\s+(?=[А-ЯA-Z🔹•\-\d]))/g)
+    .map(s => s.replace(/^[\d\.\-•*]+\s*/, '').trim())
+    .filter(s => s.length > 10 && s.length < 200)
+    .slice(0, 5);
+
+const STEP_COLORS = ['text-primary', 'text-success', 'text-purple', 'text-warning', 'text-success'];
+
+const PersonalPlanBlock = ({ summary }: { summary: string }) => {
+  const ask = useAskAi();
+  const [expanded, setExpanded] = useState(false);
+  const items = parsePlanItems(summary);
+  const shown = expanded ? items : items.slice(0, 3);
+
+  return (
+    <Card variant="default" padding="lg">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <span className="w-8 h-8 rounded-xl bg-gradient-primary flex items-center justify-center text-white text-base shadow-primary">📋</span>
+          <h2 className="text-base font-bold text-text-primary">Мой план</h2>
+        </div>
+        <Badge variant="primary">AI</Badge>
+      </div>
+
+      {items.length > 0 ? (
+        <div className="flex flex-col gap-3">
+          {shown.map((step, i) => (
+            <div key={i} className="flex items-start gap-3">
+              <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold flex-shrink-0 border-current ${STEP_COLORS[i % STEP_COLORS.length]}`}>
+                {i + 1}
+              </span>
+              <p className="text-sm text-text-secondary leading-snug pt-0.5">{step}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">{summary}</p>
+      )}
+
+      {items.length > 3 && (
+        <button onClick={() => setExpanded(e => !e)}
+          className="mt-3 text-sm font-semibold text-primary flex items-center gap-1">
+          {expanded ? 'Свернуть' : `Ещё ${items.length - 3} шага`}
+        </button>
+      )}
+
+      <div className="mt-4 pt-4 border-t border-border-light">
+        <AskAiButton
+          variant="chip"
+          question={`Вот мой персональный финансовый план: «${summary.slice(0, 300)}». Помоги детально разобрать каждый шаг и приоритизировать, что делать прямо сейчас.`}
+          label="Разобрать план с AI"
+        />
+      </div>
+    </Card>
+  );
+};
+
 // ─── Main Dashboard ────────────────────────────────────────────────────────────
 
 export const DashboardPage = () => {
@@ -442,6 +502,13 @@ export const DashboardPage = () => {
         </>)}
 
         {!isToday && <DayDetail date={selectedDay} txs={allTx} />}
+
+        {/* ── Персональный план (только сегодня, если есть summary) ── */}
+        {isToday && user?.profileSummary && (
+          <motion.div variants={item} className="px-5 mb-6">
+            <PersonalPlanBlock summary={user.profileSummary} />
+          </motion.div>
+        )}
       </motion.div>
 
       {/* ── FAB: добавить операцию ── */}

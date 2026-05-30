@@ -10,8 +10,9 @@ import { Preloader } from './Preloader';
 import { Features } from './Features';
 import { AuthPhase } from './AuthPhase';
 import { AIOnboarding } from './AIOnboarding';
+import { OnboardingPlan } from './OnboardingPlan';
 
-type Phase = 'preloader' | 'features' | 'auth' | 'ai-onboarding';
+type Phase = 'preloader' | 'features' | 'auth' | 'ai-onboarding' | 'plan';
 
 export const OnboardingPage = () => {
   const navigate = useNavigate();
@@ -20,7 +21,15 @@ export const OnboardingPage = () => {
 
   const [phase, setPhase] = useState<Phase>('preloader');
   const account = useRef<{ email: string; name: string }>({ email: '', name: '' });
+  const profileSummaryRef = useRef('');
 
+  // Вызывается когда AI-квиз завершён и получен summary — показываем план
+  const onQuizComplete = (summary: string) => {
+    profileSummaryRef.current = summary;
+    setPhase('plan');
+  };
+
+  // Вызывается с экрана плана — создаём пользователя и уходим на дашборд
   const finish = () => {
     const email = account.current.email;
     const name = account.current.name;
@@ -35,6 +44,7 @@ export const OnboardingPage = () => {
       monthlyExpenses: 0,
       hasCredits: false,
       createdAt: new Date().toISOString(),
+      profileSummary: profileSummaryRef.current || undefined,
     };
 
     if (email) saveProfile(email, user);
@@ -48,6 +58,17 @@ export const OnboardingPage = () => {
       navigate('/dashboard', { replace: true });
     }
   };
+
+  // plan-экран — полноэкранный, без оборачивающих анимаций онбординга
+  if (phase === 'plan') {
+    return (
+      <OnboardingPlan
+        name={account.current.name}
+        summary={profileSummaryRef.current}
+        onEnter={finish}
+      />
+    );
+  }
 
   return (
     <div className="w-full max-w-mobile h-dvh bg-white flex flex-col overflow-hidden relative mx-auto">
@@ -75,7 +96,7 @@ export const OnboardingPage = () => {
             <AIOnboarding
               userLogin={account.current.email}
               onBack={() => setPhase('auth')}
-              onComplete={finish}
+              onComplete={onQuizComplete}
             />
           )}
         </motion.div>
