@@ -16,6 +16,30 @@ _STREAM_TIMEOUT = httpx.Timeout(connect=10.0, read=None, write=10.0, pool=10.0)
 _CHAT_TIMEOUT = httpx.Timeout(connect=10.0, read=180.0, write=10.0, pool=10.0)
 _NO_CONNECTION = "Нет соединения с AI-сервером"
 
+_FLOAT_PROFILE_FIELDS = (
+    "monthly_income", "monthly_expenses", "monthly_debt_payments",
+    "savings", "financial_goal_amount", "current_balance",
+)
+_INT_PROFILE_FIELDS = ("days_to_salary",)
+
+
+def _sanitize_profile(profile: dict) -> dict:
+    """Привести числовые поля профиля к нужным типам перед отправкой в AI-сервер."""
+    out = dict(profile)
+    for field in _FLOAT_PROFILE_FIELDS:
+        if field in out:
+            try:
+                out[field] = float(out[field]) if out[field] is not None else None
+            except (TypeError, ValueError):
+                out[field] = None
+    for field in _INT_PROFILE_FIELDS:
+        if field in out:
+            try:
+                out[field] = int(out[field]) if out[field] is not None else None
+            except (TypeError, ValueError):
+                out[field] = None
+    return out
+
 
 async def _get_or_create_user(db, login: str) -> dict:
     user = await db.users.find_one({"login": login})
@@ -46,7 +70,7 @@ async def send_message(request: ChatRequest) -> ChatResponse:
     db = get_db()
     user = await _get_or_create_user(db, request.login)
 
-    user_profile: dict = user.get("profile") or {}
+    user_profile: dict = _sanitize_profile(user.get("profile") or {})
     history = await _get_history(db, request.login)
 
     await db.messages.insert_one({
@@ -90,7 +114,7 @@ async def stream_message(request: ChatRequest) -> StreamingResponse:
     db = get_db()
     user = await _get_or_create_user(db, request.login)
 
-    user_profile: dict = user.get("profile") or {}
+    user_profile: dict = _sanitize_profile(user.get("profile") or {})
     history = await _get_history(db, request.login)
 
     await db.messages.insert_one({
