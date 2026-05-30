@@ -1,5 +1,5 @@
 from typing import Any, Literal, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class UserProfile(BaseModel):
@@ -21,6 +21,7 @@ class UserProfile(BaseModel):
 
 class ContextModel(BaseModel):
     user_profile: UserProfile = UserProfile()
+    history: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class AIRequest(BaseModel):
@@ -48,3 +49,10 @@ class CashflowRequest(BaseModel):
     user_id: str
     current_balance: float
     days_to_salary: int
+
+
+class BankOffersRequest(BaseModel):
+    user_id: str
+    loan_amount: float
+    loan_rate: float
+    loan_months: int

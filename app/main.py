@@ -7,10 +7,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
+from starlette.middleware.base import BaseHTTPMiddleware
 
+from .bank_offers import get_fallback_offers, score_offers
 from .calculators import cashflow_forecast_detailed
 from .daily_action import get_daily_action
 from .database import _get_db, get_onboarding_history, get_user_profile
@@ -19,7 +21,7 @@ from .llm import OllamaClient
 from .onboarding import process_onboarding
 from .patterns import analyze_patterns
 from .queue import acquire, get_status, release
-from .schemas import AIRequest, AIResponse, CashflowRequest
+from .schemas import AIRequest, AIResponse, BankOffersRequest, CashflowRequest
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -28,6 +30,42 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="AI Service", version="0.1.0")
+
+
+class _IOLoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        body_bytes = await request.body()
+        if body_bytes:
+            try:
+                logger.info(f"[IN] {request.method} {request.url.path}\n{json.dumps(json.loads(body_bytes), ensure_ascii=False, indent=2)}")
+            except Exception:
+                pass
+
+        response = await call_next(request)
+
+        if response.headers.get("content-type", "").startswith("text/event-stream"):
+            return response
+
+        chunks: list[bytes] = []
+        async for chunk in response.body_iterator:
+            chunks.append(chunk)
+        body_out = b"".join(chunks)
+
+        if body_out:
+            try:
+                logger.info(f"[OUT] {request.method} {request.url.path}\n{json.dumps(json.loads(body_out), ensure_ascii=False, indent=2)}")
+            except Exception:
+                pass
+
+        return Response(
+            content=body_out,
+            status_code=response.status_code,
+            headers=dict(response.headers),
+            media_type=response.media_type,
+        )
+
+
+app.add_middleware(_IOLoggingMiddleware)
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -42,6 +80,7 @@ def _initial_state(request: AIRequest) -> AgentState:
         "query": request.query,
         "context": request.context.model_dump(),
         "mode": request.mode,
+        "history": request.context.history,
         "intent": "question",
         "needs_search": False,
         "search_query": None,
@@ -49,6 +88,7 @@ def _initial_state(request: AIRequest) -> AgentState:
         "sources": [],
         "answer_text": "",
         "structured": {},
+        "table": None,
         "error": None,
     }
 
@@ -77,7 +117,7 @@ async def cashflow_calculate(request: CashflowRequest):
     logger.info(f"[/ai/cashflow/calculate] user_id={request.user_id}")
     profile = get_user_profile(request.user_id)
     if not profile:
-        raise HTTPException(status_code=404, detail="Профиль не найден")
+        raise HTTPException(status_code=422, detail="Профиль не найден — сначала пройдите онбординг")
     f = profile.get("finances", {})
     monthly_expenses = f.get("monthly_expenses_estimate")
     if not monthly_expenses:
@@ -152,6 +192,7 @@ async def process(request: AIRequest) -> AIResponse:
             request.query,
             request.context.model_dump(),
             request.mode,
+            request.context.history,
         )
         return AIResponse(
             text=result["text"],
@@ -220,6 +261,24 @@ async def stream(request: AIRequest):
 @app.get("/ai/queue/status")
 def queue_status():
     return get_status()
+
+
+@app.post("/ai/bank-offers")
+async def bank_offers(request: BankOffersRequest):
+    logger.info(f"[/ai/bank-offers] user_id={request.user_id} amount={request.loan_amount} rate={request.loan_rate} months={request.loan_months}")
+    try:
+        offers = score_offers(
+            get_fallback_offers(),
+            request.loan_rate,
+            request.loan_months,
+            request.loan_amount,
+            trusted=True,
+        )
+    except Exception as e:
+        logger.error(f"[/ai/bank-offers] error: {e}", exc_info=True)
+        offers = []
+    search_query = f"кредит {int(request.loan_amount)} ₽ на {request.loan_months} мес. под {request.loan_rate}% годовых"
+    return {"offers": offers, "search_query": search_query}
 
 
 class OnboardingRequest(BaseModel):

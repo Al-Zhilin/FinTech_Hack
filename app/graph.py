@@ -25,6 +25,7 @@ class AgentState(TypedDict):
     query: str
     context: dict[str, Any]
     mode: str
+    history: list[dict]
     # Planner output
     intent: str
     needs_search: bool
@@ -78,11 +79,9 @@ def _extract_loan_params(query: str) -> dict | None:
     prompt = cfg["user_template"].format(query=query)
     try:
         raw = _CLIENT.generate(model=PLANNER_MODEL, prompt=prompt, system=cfg["system"])
-        cleaned = re.sub(r"```(?:json)?\s*|\s*```", "", raw).strip()
-        cleaned = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", cleaned)
-        if cleaned.lower() in ("null", "none", ""):
+        if raw.strip().lower() in ("null", "none", ""):
             return None
-        data = json.loads(cleaned)
+        data = _parse_json(raw)
         if not data or not data.get("loan_amount"):
             return None
         return data
@@ -207,20 +206,32 @@ def node_analyst(state: AgentState) -> AgentState:
         lines = "\n".join(f"- {s}" for s in state["search_results"][:5])
         search_block = f"Результаты поиска:\n{lines}"
 
+    history_block = ""
+    if state.get("history"):
+        lines = "\n".join(
+            f"{'Пользователь' if m['role'] == 'user' else 'Ассистент'}: {m['text']}"
+            for m in state["history"]
+        )
+        history_block = f"История диалога:\n{lines}"
+
     profile_block = _build_profile_block(state.get("context", {}).get("user_profile", {}))
 
     calc_result = _run_calculator(state)
     calc_block = ""
     if calc_result:
-        import json as _json
-        calc_block = "Результаты калькулятора:\n" + _json.dumps(calc_result, ensure_ascii=False, indent=2)
+        calc_block = "Результаты калькулятора:\n" + json.dumps(calc_result, ensure_ascii=False, indent=2)
+
+    table_hint = ""
+    if re.search(r"таблиц|в виде таблиц|покажи таблиц", state["query"], re.IGNORECASE):
+        table_hint = "\n\n‼️ ОБЯЗАТЕЛЬНО: пользователь явно запросил таблицу. Включи тег <table>...</table> с данными ПОСЛЕ основного JSON — это не опционально."
 
     prompt = cfg["user_template"].format(
         query=state["query"],
+        history_block=history_block,
         search_block=search_block,
         profile_block=profile_block,
         calc_block=calc_block,
-    )
+    ) + table_hint
 
     raw = ""
     answer_text = "Не удалось получить ответ."
@@ -276,7 +287,7 @@ GRAPH = _build_graph()
 
 
 # ── Public entry point ─────────────────────────────────────────────────────────
-def run_graph(user_id: str, query: str, context: dict, mode: str) -> dict:
+def run_graph(user_id: str, query: str, context: dict, mode: str, history: list[dict] | None = None) -> dict:
     # Demo fallback check
     for keyword, demo in DEMO_RESPONSES.items():
         if keyword.lower() in query.lower():
@@ -288,6 +299,7 @@ def run_graph(user_id: str, query: str, context: dict, mode: str) -> dict:
         "query": query,
         "context": context,
         "mode": mode,
+        "history": history or [],
         "intent": "question",
         "needs_search": False,
         "search_query": None,

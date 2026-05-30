@@ -210,11 +210,17 @@ def _build_summary(profile: dict) -> str:
     parts = []
     if l.get("interests"):
         parts.append(f"Интересы: {', '.join(l['interests'])}")
-    if f.get("monthly_income"):
-        parts.append(f"Доход ~{f['monthly_income']:,.0f} ₽/мес")
+    try:
+        if f.get("monthly_income"):
+            parts.append(f"Доход ~{float(f['monthly_income']):,.0f} ₽/мес")
+    except (ValueError, TypeError):
+        pass
     if f.get("financial_goal"):
         parts.append(f"Цель: {f['financial_goal']}")
-    if f.get("savings"):
-        parts.append(f"Накопления ~{f['savings']:,.0f} ₽")
+    try:
+        if f.get("savings"):
+            parts.append(f"Накопления ~{float(f['savings']):,.0f} ₽")
+    except (ValueError, TypeError):
+        pass
     base = ". ".join(parts) if parts else "Профиль собран"
     return f"Отлично, я тебя понял! {base}. Теперь я смогу давать персональные советы."
