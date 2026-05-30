@@ -96,29 +96,117 @@ export interface ShopItem {
   price: number;
   emoji: string;
   desc: string;
-  slot?: AccessorySlot; // только для аксессуаров кота
+  image: string;          // URL картинки (Unsplash CDN)
+  imageBg?: string;       // цвет-заглушка пока грузится
+  slot?: AccessorySlot;   // только для аксессуаров кота
   partner?: boolean;
+  partnerBrand?: string;  // название партнёра
 }
 
 export const SHOP_ITEMS: ShopItem[] = [
-  // Для КопиКота (60–200) — аксессуары, можно примерить
-  { id: 'c_crown',   tab: 'cat', name: 'Корона',     price: 200, emoji: '👑', slot: 'head', desc: 'Монарх виртуальной казны' },
-  { id: 'c_hat',     tab: 'cat', name: 'Цилиндр',    price: 140, emoji: '🎩', slot: 'head', desc: 'Джентльмен от мира финансов' },
-  { id: 'c_glasses', tab: 'cat', name: 'Очки',       price: 120, emoji: '🕶️', slot: 'face', desc: 'Будущее ослепительно' },
-  { id: 'c_bowtie',  tab: 'cat', name: 'Бабочка',    price: 80,  emoji: '🎀', slot: 'neck', desc: 'Для важных переговоров' },
-  { id: 'c_skate',   tab: 'cat', name: 'Скейтборд',  price: 160, emoji: '🛹', slot: 'feet', desc: 'Катится к финсвободе' },
-  { id: 'c_wand',    tab: 'cat', name: 'Жезл',       price: 60,  emoji: '🪄', slot: 'paw',  desc: 'Немного финансовой магии' },
-  // Для приложения (50–500) — визуальные апгрейды
-  { id: 'a_gold',    tab: 'app', name: 'Золотая тема',     price: 500, emoji: '🌟', desc: 'Премиальный золотой интерфейс' },
-  { id: 'a_neon',    tab: 'app', name: 'Неоновая тема',    price: 400, emoji: '💜', desc: 'Тёмный неон для ночных трат' },
-  { id: 'a_frame',   tab: 'app', name: 'Рамка аватара',   price: 250, emoji: '🖼️', desc: 'Анимированная рамка профиля' },
-  { id: 'a_icons',   tab: 'app', name: 'Иконки категорий', price: 150, emoji: '🎨', desc: 'Кастомные иконки расходов' },
-  { id: 'a_emoji',   tab: 'app', name: 'Пак стикеров',     price: 50,  emoji: '🐾', desc: 'Стикеры КопиКота в заметках' },
-  // От партнёров (3000–10000)
-  { id: 'p_coffee',  tab: 'partners', name: 'Кофе в подарок',  price: 3000,  emoji: '☕', desc: 'Промокод в кофейне', partner: true },
-  { id: 'p_shop',    tab: 'partners', name: 'Скидка 15%',      price: 4000,  emoji: '🛍️', desc: 'Промокод в магазине', partner: true },
-  { id: 'p_music',   tab: 'partners', name: 'Музыка · 1 мес.', price: 5000,  emoji: '🎧', desc: 'Подписка на стриминг', partner: true },
-  { id: 'p_premium', tab: 'partners', name: 'ФинПилот Premium', price: 10000, emoji: '🚀', desc: 'Месяц Premium-версии', partner: true },
+  // ── Для КопиКота (60–200) — аксессуары, можно примерить ──
+  {
+    id: 'c_crown', tab: 'cat', name: 'Золотая корона', price: 200, emoji: '👑', slot: 'head',
+    desc: 'Монарх виртуальной казны',
+    image: 'https://images.unsplash.com/photo-1584302179602-e4c3d3fd629d?w=400&h=400&fit=crop&q=80',
+    imageBg: '#FFF3CD',
+  },
+  {
+    id: 'c_hat', tab: 'cat', name: 'Цилиндр', price: 140, emoji: '🎩', slot: 'head',
+    desc: 'Джентльмен от мира финансов',
+    image: 'https://images.unsplash.com/photo-1514327605112-b887c0e61c0a?w=400&h=400&fit=crop&q=80',
+    imageBg: '#1A1A2E',
+  },
+  {
+    id: 'c_glasses', tab: 'cat', name: 'Солнечные очки', price: 120, emoji: '🕶️', slot: 'face',
+    desc: 'Будущее ослепительно ярко',
+    image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=400&h=400&fit=crop&q=80',
+    imageBg: '#E3F2FD',
+  },
+  {
+    id: 'c_bowtie', tab: 'cat', name: 'Галстук-бабочка', price: 80, emoji: '🎀', slot: 'neck',
+    desc: 'Для важных финансовых переговоров',
+    image: 'https://images.unsplash.com/photo-1589756882348-3b70f4cde7a2?w=400&h=400&fit=crop&q=80',
+    imageBg: '#FCE4EC',
+  },
+  {
+    id: 'c_skate', tab: 'cat', name: 'Скейтборд', price: 160, emoji: '🛹', slot: 'feet',
+    desc: 'Катится к финансовой свободе',
+    image: 'https://images.unsplash.com/photo-1547047562-90c5f3e16e1b?w=400&h=400&fit=crop&q=80',
+    imageBg: '#F3E5F5',
+  },
+  {
+    id: 'c_wand', tab: 'cat', name: 'Магический жезл', price: 60, emoji: '🪄', slot: 'paw',
+    desc: 'Немного финансовой магии каждый день',
+    image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&h=400&fit=crop&q=80',
+    imageBg: '#EDE7F6',
+  },
+
+  // ── Для приложения (50–500) — визуальные апгрейды ──
+  {
+    id: 'a_gold', tab: 'app', name: 'Золотая тема', price: 500, emoji: '✨',
+    desc: 'Премиальный золотой интерфейс для ценителей',
+    image: 'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=400&h=400&fit=crop&q=80',
+    imageBg: '#FFF8E1',
+  },
+  {
+    id: 'a_neon', tab: 'app', name: 'Неоновая тема', price: 400, emoji: '💜',
+    desc: 'Тёмный неон — для ночных финансистов',
+    image: 'https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=400&h=400&fit=crop&q=80',
+    imageBg: '#1A1A2E',
+  },
+  {
+    id: 'a_frame', tab: 'app', name: 'Анимированная рамка', price: 250, emoji: '🖼️',
+    desc: 'Эффектная рамка вокруг аватара профиля',
+    image: 'https://images.unsplash.com/photo-1617817508016-7fb6cb73a7e7?w=400&h=400&fit=crop&q=80',
+    imageBg: '#E8F5E9',
+  },
+  {
+    id: 'a_icons', tab: 'app', name: 'Иконки категорий', price: 150, emoji: '🎨',
+    desc: 'Кастомные иконки для всех категорий расходов',
+    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop&q=80',
+    imageBg: '#FFF3E0',
+  },
+  {
+    id: 'a_emoji', tab: 'app', name: 'Пак стикеров', price: 50, emoji: '🐾',
+    desc: 'Стикеры КопиКота для заметок и чатов',
+    image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop&q=80',
+    imageBg: '#E1F5FE',
+  },
+
+  // ── От партнёров (3000–10000) ──
+  {
+    id: 'p_coffee', tab: 'partners', name: 'Кофе в подарок', price: 3000, emoji: '☕',
+    desc: 'Промокод на любой напиток в сети кофеен',
+    partnerBrand: 'Coffeemania',
+    image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop&q=80',
+    imageBg: '#EFEBE9',
+    partner: true,
+  },
+  {
+    id: 'p_shop', tab: 'partners', name: 'Скидка 15%', price: 4000, emoji: '🛍️',
+    desc: 'Промокод на следующую покупку в магазине',
+    partnerBrand: 'Lamoda',
+    image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&h=400&fit=crop&q=80',
+    imageBg: '#FCE4EC',
+    partner: true,
+  },
+  {
+    id: 'p_music', tab: 'partners', name: 'Музыка · 1 мес.', price: 5000, emoji: '🎧',
+    desc: 'Подписка на музыкальный стриминг без рекламы',
+    partnerBrand: 'Яндекс Музыка',
+    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop&q=80',
+    imageBg: '#E8EAF6',
+    partner: true,
+  },
+  {
+    id: 'p_premium', tab: 'partners', name: 'ФинПилот Premium', price: 10000, emoji: '🚀',
+    desc: 'Месяц Premium — AI без ограничений, расширенная аналитика',
+    partnerBrand: 'ФинПилот',
+    image: 'https://images.unsplash.com/photo-1534796636912-3b6cec9c8ce3?w=400&h=400&fit=crop&q=80',
+    imageBg: '#EDE7F6',
+    partner: true,
+  },
 ];
 
 export function findShopItem(id: string): ShopItem | undefined {

@@ -3,26 +3,32 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Cell, PieChart, Pie } from 'recharts';
 import {
-  Plus, Search,
+  Plus, Search, Landmark,
   TrendingUp, TrendingDown, ChevronDown, X, ArrowUpRight, ArrowDownRight,
-  Calculator, ChevronRight, ShieldCheck,
+  Calculator, ChevronRight,
 } from 'lucide-react';
-import { useFinanceStore } from '@/entities/finance/model/financeStore';
+import { useFinanceStore, useFinanceAnalysis } from '@/entities/finance/model/financeStore';
 import { useUserTxStore } from '@/entities/finance/model/userTxStore';
 import { useUserStore } from '@/entities/user/model/userStore';
+import { useUserGoalsStore } from '@/entities/goal/model/userGoalsStore';
+import { buildFinanceMicroInsights } from '@/entities/finance/model/financeMicroInsights';
 import {
   periodRange, inRange, summarize, byCategory, buildSeries,
   weekdayInsight, spendingComment, type DateRange,
 } from '@/entities/finance/model/financeSelectors';
 import { getCategoryMeta } from '@/entities/finance/model/categoryMeta';
 import { AddTransactionSheet } from '@/features/add-transaction';
+import { ConnectBankSheet } from '@/features/connect-bank';
+import { ImpulseCheckSheet } from '@/features/impulse-check/ImpulseCheckSheet';
 import { AskAiButton } from '@/features/ask-ai';
+import { SafeSpendIndicator } from '@/widgets/finance/SafeSpendIndicator';
+import { FinanceMicroInsightFeed } from '@/widgets/finance/FinanceMicroInsightFeed';
 import { Card } from '@/shared/ui/Card';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { formatCurrency, formatDate } from '@/shared/lib/formatters';
-import type { FinancePeriod, TxType } from '@/shared/types';
+import type { FinancePeriod, Goal, TxType } from '@/shared/types';
 
 const item = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
@@ -38,8 +44,22 @@ const PERIODS: { id: FinancePeriod; label: string }[] = [
 
 export const FinancePage = () => {
   const profile = useFinanceStore(s => s.profile);
-  const { txs: userTx, addTx } = useUserTxStore();
+  const { txs: userTx, addTx, bankConnected } = useUserTxStore();
   const user = useUserStore(s => s.user);
+  const { goals: userGoals } = useUserGoalsStore();
+
+  const goals = useMemo<Goal[]>(
+    () => (userGoals.length ? userGoals : profile.goals),
+    [userGoals, profile.goals],
+  );
+
+  const analysis = useFinanceAnalysis();
+  const safeSpend = analysis.safeSpend;
+  const finance = analysis.finance;
+  const microInsights = useMemo(
+    () => buildFinanceMicroInsights(userTx, user, safeSpend),
+    [userTx, user, safeSpend],
+  );
 
   const [period, setPeriod] = useState<FinancePeriod>('month');
   const [customFrom, setCustomFrom] = useState('');
@@ -49,6 +69,7 @@ export const FinancePage = () => {
   const [filterType, setFilterType] = useState<'all' | TxType>('all');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [bankOpen, setBankOpen] = useState(false);
 
   const allTx = userTx;
 
@@ -72,9 +93,6 @@ export const FinancePage = () => {
     return weekdayInsight(allTx.filter(t => inRange(t, r)));
   }, [allTx]);
 
-  const totalBalance = profile.balance;
-
-  // История: поиск + фильтр
   const history = useMemo(() => {
     const q = search.trim().toLowerCase();
     return periodTx.filter(t => {
@@ -92,19 +110,27 @@ export const FinancePage = () => {
     <motion.div className="flex flex-col bg-bg-base min-h-full pb-24"
       variants={container} initial="hidden" animate="show">
 
-      {/* ── Header: balance ── */}
+      {/* ── Header: balance + safe to spend ── */}
       <motion.div variants={item} className="px-5 pt-12 pb-4">
-        <p className="text-text-tertiary text-sm">Общий баланс</p>
-        <h1 className="text-4xl font-bold text-text-primary mb-4">{formatCurrency(totalBalance)}</h1>
-        {user?.hasCushion ? (
-          <div className="flex items-center gap-3 bg-success-light rounded-2xl px-4 py-3">
-            <ShieldCheck size={22} className="text-success flex-shrink-0" />
-            <div>
-              <p className="text-[11px] text-text-tertiary font-medium">Финансовая подушка</p>
-              <p className="font-bold text-sm text-success">Есть накопления ✓</p>
+        <h1 className="text-xl font-bold text-text-primary mb-3">Финансы</h1>
+        {!bankConnected && (
+          <button
+            onClick={() => setBankOpen(true)}
+            className="w-full mb-3 flex items-center gap-3 p-4 rounded-2xl bg-gradient-primary text-white shadow-primary active:scale-[0.99] transition-transform"
+          >
+            <Landmark size={22} />
+            <div className="text-left">
+              <p className="font-bold text-sm">Подключить банк</p>
+              <p className="text-xs text-white/80">Загрузим операции за 3 месяца автоматически</p>
             </div>
-          </div>
-        ) : null}
+          </button>
+        )}
+        <SafeSpendIndicator data={safeSpend} />
+      </motion.div>
+
+      {/* ── Impulse check ── */}
+      <motion.div variants={item} className="px-5 mb-4">
+        <ImpulseCheckSheet safeSpend={safeSpend} user={user} goals={goals} finance={finance} />
       </motion.div>
 
       {/* ── Period switcher ── */}
@@ -125,21 +151,39 @@ export const FinancePage = () => {
       </motion.div>
 
       {/* ── Income / Expense summary ── */}
-      <motion.div variants={item} className="px-5 mb-4 grid grid-cols-2 gap-3">
-        <div className="bg-success-light rounded-2xl p-4">
-          <div className="flex items-center gap-1.5 mb-1">
-            <ArrowDownRight size={15} className="text-success" />
-            <span className="text-xs font-medium text-text-secondary">Доходы</span>
+      <motion.div variants={item} className="px-5 mb-4 flex flex-col gap-2">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-success-light rounded-2xl p-4">
+            <div className="flex items-center gap-1.5 mb-1">
+              <ArrowDownRight size={15} className="text-success" />
+              <span className="text-xs font-medium text-text-secondary">Доходы</span>
+            </div>
+            <p className="text-xl font-bold text-success">{formatCurrency(summary.income, true)}</p>
           </div>
-          <p className="text-xl font-bold text-success">{formatCurrency(summary.income, true)}</p>
-        </div>
-        <div className="bg-danger-light rounded-2xl p-4">
-          <div className="flex items-center gap-1.5 mb-1">
-            <ArrowUpRight size={15} className="text-danger" />
-            <span className="text-xs font-medium text-text-secondary">Расходы</span>
+          <div className="bg-danger-light rounded-2xl p-4">
+            <div className="flex items-center gap-1.5 mb-1">
+              <ArrowUpRight size={15} className="text-danger" />
+              <span className="text-xs font-medium text-text-secondary">Расходы</span>
+            </div>
+            <p className="text-xl font-bold text-danger">{formatCurrency(summary.expense, true)}</p>
           </div>
-          <p className="text-xl font-bold text-danger">{formatCurrency(summary.expense, true)}</p>
         </div>
+        {summary.income > 0 && (
+          <div className={`rounded-2xl px-4 py-3 flex items-center justify-between ${summary.income - summary.expense >= 0 ? 'bg-primary-light' : 'bg-warning-light'}`}>
+            <div>
+              <p className="text-xs font-medium text-text-secondary mb-0.5">Остаток за период</p>
+              <p className={`text-lg font-bold ${summary.income - summary.expense >= 0 ? 'text-primary' : 'text-warning'}`}>
+                {summary.income - summary.expense >= 0 ? '+' : ''}{formatCurrency(summary.income - summary.expense, true)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-text-tertiary">Норма сбережений</p>
+              <p className="text-base font-bold text-text-primary">
+                {summary.income > 0 ? Math.round(((summary.income - summary.expense) / summary.income) * 100) : 0}%
+              </p>
+            </div>
+          </div>
+        )}
       </motion.div>
 
       {/* ── Credit calculators shortcut ── */}
@@ -229,32 +273,81 @@ export const FinancePage = () => {
                         <span className="text-text-primary font-medium truncate">{c.label}</span>
                         <span className="text-text-secondary font-semibold">{Math.round(c.pct)}%</span>
                       </div>
+                      <div className="w-full h-1 rounded-full bg-border-light overflow-hidden mt-0.5">
+                        <div className="h-full rounded-full" style={{ width: `${c.pct}%`, backgroundColor: c.color }} />
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
+            {/* Умный совет по топ-категории */}
+            {cats[0] && (
+              <div className="mt-3 rounded-xl bg-bg-muted px-3 py-2.5 flex items-start gap-2">
+                <span className="text-base flex-shrink-0">{cats[0].icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-text-secondary leading-snug">
+                    <span className="font-semibold text-text-primary">«{cats[0].label}»</span> — самая крупная статья: {Math.round(cats[0].pct)}% расходов.{' '}
+                    {cats[0].pct > 40
+                      ? 'Это много — стоит разобраться, что именно съедает такую долю.'
+                      : cats[0].pct > 25
+                        ? 'Норм, но есть пространство для оптимизации.'
+                        : 'Хорошо распределено по категориям.'}
+                  </p>
+                  <AskAiButton
+                    variant="chip"
+                    className="mt-1.5"
+                    question={`У меня ${Math.round(cats[0].pct)}% расходов уходит на «${cats[0].label}» — это ${formatCurrency(cats[0].amount, true)} за период. Как оптимизировать эту категорию?`}
+                    label={`Как сократить «${cats[0].label}»?`}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Раскрытие всех категорий */}
             <AnimatePresence initial={false}>
               {expanded === 'cats' && (
                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                   <div className="flex flex-col gap-2.5 pt-4 mt-3 border-t border-border-light">
-                    {cats.map(c => (
-                      <div key={c.id} className="flex items-center gap-3">
-                        <span className="w-9 h-9 rounded-xl flex items-center justify-center text-base" style={{ backgroundColor: c.color + '20' }}>{c.icon}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between mb-1">
-                            <span className="text-sm font-medium text-text-primary">{c.label}</span>
-                            <span className="text-sm font-semibold text-text-primary">{formatCurrency(c.amount, true)}</span>
-                          </div>
-                          <div className="w-full h-1.5 rounded-full bg-border-light overflow-hidden">
-                            <div className="h-full rounded-full" style={{ width: `${c.pct}%`, backgroundColor: c.color }} />
+                    {cats.map((c, idx) => (
+                      <div key={c.id}>
+                        <div className="flex items-center gap-3">
+                          <span className="w-9 h-9 rounded-xl flex items-center justify-center text-base" style={{ backgroundColor: c.color + '20' }}>{c.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm font-medium text-text-primary">{c.label}</span>
+                              <span className="text-sm font-semibold text-text-primary">{formatCurrency(c.amount, true)}</span>
+                            </div>
+                            <div className="w-full h-1.5 rounded-full bg-border-light overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: `${c.pct}%`, backgroundColor: c.color }} />
+                            </div>
+                            <div className="flex justify-between mt-0.5">
+                              <span className="text-[11px] text-text-tertiary">{Math.round(c.pct)}% от расходов · {c.count} операций</span>
+                            </div>
                           </div>
                         </div>
-                        <span className="text-xs text-text-tertiary w-8 text-right">{c.count}×</span>
+                        {/* Совет под 1-й и 2-й категориями */}
+                        {idx < 2 && (
+                          <div className="ml-12 mt-1">
+                            <AskAiButton
+                              variant="chip"
+                              question={`Категория «${c.label}»: ${formatCurrency(c.amount, true)} за период (${Math.round(c.pct)}% расходов). Это нормально для моего уровня дохода? Как можно сократить?`}
+                              label={`Совет по «${c.label}»`}
+                            />
+                          </div>
+                        )}
                       </div>
                     ))}
+                  </div>
+
+                  {/* Итоговый AI-разбор всех категорий */}
+                  <div className="mt-4 pt-3 border-t border-border-light">
+                    <AskAiButton
+                      variant="solid"
+                      question={`Вот мои расходы по категориям за период: ${cats.map(c => `${c.label} — ${formatCurrency(c.amount, true)} (${Math.round(c.pct)}%)`).join(', ')}. Проанализируй структуру и скажи, где я трачу не по нормам и что изменить в первую очередь.`}
+                      label="Разобрать все категории с AI"
+                    />
                   </div>
                 </motion.div>
               )}
@@ -273,7 +366,9 @@ export const FinancePage = () => {
 
       {/* ── History ── */}
       <motion.div variants={item} className="px-5">
-        <div className="flex items-center justify-between mb-3">
+        <FinanceMicroInsightFeed insights={microInsights} />
+
+        <div className="flex items-center justify-between mb-3 mt-5">
           <h2 className="text-base font-bold text-text-primary">История</h2>
           <span className="text-xs text-text-tertiary">{history.length} операций</span>
         </div>
@@ -333,16 +428,22 @@ export const FinancePage = () => {
       <div className="fixed inset-x-0 bottom-24 z-40 pointer-events-none">
         <div className="max-w-mobile mx-auto px-5 flex justify-end">
           <button
-            onClick={() => setAddOpen(true)}
+            onClick={() => (bankConnected ? setAddOpen(true) : setBankOpen(true))}
             className="pointer-events-auto w-14 h-14 rounded-full bg-gradient-primary text-white shadow-primary flex items-center justify-center active:scale-90 transition-transform"
           >
-            <Plus size={26} />
+            {bankConnected ? <Plus size={26} /> : <Landmark size={24} />}
           </button>
         </div>
       </div>
 
-      {/* ── Add sheet ── */}
-      <AddTransactionSheet open={addOpen} onClose={() => setAddOpen(false)} onAdd={addTx} />
+      <ConnectBankSheet open={bankOpen} onClose={() => setBankOpen(false)} />
+
+      <AddTransactionSheet
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onAdd={addTx}
+        onConnectBank={() => { setAddOpen(false); setBankOpen(true); }}
+      />
 
       {/* ── Custom period sheet ── */}
       <BottomSheet open={customOpen} onClose={() => setCustomOpen(false)} title="Свой период">

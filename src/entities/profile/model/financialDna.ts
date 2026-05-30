@@ -15,8 +15,21 @@ export interface FinancialLevel {
 
 const LEVEL_TITLES = ['Новичок', 'Ученик', 'Уверенный', 'Стратег', 'Мастер'];
 
-export const getFinancialLevel = (user: User | null, profile: FinancialProfile): FinancialLevel => {
-  const health = user?.analysis?.healthScore ?? (100 - profile.stressScore);
+export const getFinancialLevel = (
+  user: User | null,
+  profile: FinancialProfile,
+  txCount = 0,
+): FinancialLevel => {
+  const health = Math.max(0, 100 - profile.stressScore);
+
+  if (txCount === 0 && profile.stressScore >= 100) {
+    return {
+      level: 1,
+      title: 'Новичок',
+      progress: 0,
+      health: 0,
+    };
+  }
   const level = Math.max(1, Math.min(5, Math.floor(health / 20) + 1));
   const within = health % 20;
   return {

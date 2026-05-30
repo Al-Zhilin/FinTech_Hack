@@ -83,7 +83,7 @@ export const ProfilePage = () => {
   const csvRef = useRef<HTMLInputElement>(null);
 
   const dna = useMemo(() => getFinancialDna(user, profile), [user, profile]);
-  const level = useMemo(() => getFinancialLevel(user, profile), [user, profile]);
+  const level = useMemo(() => getFinancialLevel(user, profile, userTx.length), [user, profile, userTx.length]);
   const recaps = useMemo(() => buildWeeklyRecaps(userTx), [userTx]);
 
   if (!user) return null;
@@ -159,7 +159,9 @@ export const ProfilePage = () => {
           <p className="text-xs text-text-secondary mb-3">{dna.blurb}</p>
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-sm font-bold text-text-primary">{t('profile.level')} {level.level} · {level.title}</span>
-            <span className="text-xs text-text-tertiary">Индекс {level.health}/100</span>
+            <span className="text-xs text-text-tertiary">
+              {userTx.length === 0 && profile.stressScore >= 100 ? 'Нет данных' : `Индекс ${level.health}/100`}
+            </span>
           </div>
           <ProgressBar value={level.progress} color="purple" size="sm" />
         </motion.div>

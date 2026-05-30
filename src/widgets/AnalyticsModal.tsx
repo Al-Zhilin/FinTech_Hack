@@ -6,6 +6,8 @@ import {
 } from 'framer-motion';
 import { useUserStore } from '@/entities/user/model/userStore';
 import { useFinanceStore } from '@/entities/finance/model/financeStore';
+import { useUserTxStore } from '@/entities/finance/model/userTxStore';
+import { getDashboardContext } from '@/entities/finance/model/dashboardReadiness';
 import { buildInsights, type Insight } from '@/entities/insight/model/insights';
 import { useAskAi } from '@/features/ask-ai';
 
@@ -116,17 +118,21 @@ const SlideView = ({
 export const AnalyticsModal = () => {
   const user = useUserStore(s => s.user);
   const profile = useFinanceStore(s => s.profile);
+  const userTx = useUserTxStore(s => s.txs);
   const ask = useAskAi();
 
   const [visible, setVisible] = useState(false);
   const [index, setIndex] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
-  const slides = buildInsights(profile);
+  const slides = buildInsights(profile, userTx.length);
   const total = slides.length;
 
   useEffect(() => {
     if (!user) return;
+
+    const { forecastUnlocked } = getDashboardContext(userTx, profile.balance, user);
+    if (!forecastUnlocked) return;
 
     const age = Date.now() - new Date(user.createdAt).getTime();
     if (age < RETURNING_AGE_MS) return; // новый пользователь
@@ -140,7 +146,7 @@ export const AnalyticsModal = () => {
     }, SHOW_DELAY_MS);
 
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [user]);
+  }, [user, userTx, profile.balance]);
 
   const close = () => {
     setVisible(false);

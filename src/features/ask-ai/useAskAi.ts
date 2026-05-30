@@ -7,7 +7,8 @@ import type { FinancialProfile } from '@/shared/types';
 // чтобы AI анализировал ответ с учётом данных пользователя.
 export const withFinancialContext = (question: string, p: FinancialProfile): string =>
   `${question}\n\n[Мои данные: доход ${p.monthlyIncome} ₽/мес, расходы ${p.monthlySpent} ₽/мес, ` +
-  `баланс ${p.balance} ₽, норма сбережений ${p.savingsRate}%.]`;
+  `баланс ${p.balance} ₽, безопасно потратить ${p.safeAmount} ₽, индекс здоровья ${p.healthScore ?? '—'}/100 (${p.healthLabel}), ` +
+  `норма сбережений ${p.savingsRate}%.]`;
 
 /**
  * Возвращает функцию ask(question, opts): кладёт готовый промт (с данными пользователя)

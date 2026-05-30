@@ -68,20 +68,28 @@ export const analyzeGoal = (goal: Goal, finance: GoalFinance): GoalAnalysis => {
 
   const plan: string[] = [];
   if (status !== 'done') {
-    plan.push(
-      `Откладывай ~${requiredMonthly.toLocaleString('ru-RU')} ₽ в месяц, чтобы успеть к сроку.`,
-    );
     if (status === 'hard') {
-      const gap = requiredMonthly - freeCash;
-      plan.push(
-        `Сейчас свободно ${freeCash.toLocaleString('ru-RU')} ₽/мес — не хватает ${Math.max(0, gap).toLocaleString('ru-RU')} ₽. ` +
-          'Сократи 1–2 крупные категории трат или сдвинь срок.',
-      );
-      if (etaDate) plan.push(`При нынешнем темпе цель закроется ближе к ${etaDate}.`);
+      if (freeCash <= 0 || finance.income <= 0) {
+        plan.push(
+          `Накопить ${remaining.toLocaleString('ru-RU')} ₽ за ${monthsLeft} мес. — очень амбициозно при нулевом балансе.`,
+        );
+        plan.push('Давай перенесём срок или разобьём сумму на более долгий период?');
+        plan.push('Сначала укажите доход и текущий остаток — без этого план будет нереалистичным.');
+      } else {
+        const gap = requiredMonthly - freeCash;
+        plan.push(
+          `При свободных ${freeCash.toLocaleString('ru-RU')} ₽/мес не хватает ${Math.max(0, gap).toLocaleString('ru-RU')} ₽ для срока.`,
+        );
+        plan.push('Сократите 1–2 крупные категории трат или перенесите дедлайн.');
+        if (etaDate) plan.push(`При текущем темпе цель ближе к ${etaDate}.`);
+      }
     } else {
+      const monthly = Math.min(requiredMonthly, freeCash || requiredMonthly);
+      plan.push(
+        `Откладывай ~${monthly.toLocaleString('ru-RU')} ₽ в месяц — это ${sharePct}% свободных денег.`,
+      );
       plan.push('Настрой автоперевод в день зарплаты — деньги уйдут на цель до трат.');
     }
-    plan.push('Храни накопления на отдельном счёте с процентом на остаток.');
   }
 
   return {
@@ -161,3 +169,18 @@ const PEER_STORIES: Record<PeerCategory, PeerStory[]> = {
 
 export const getPeerStories = (goal: Goal): PeerStory[] =>
   PEER_STORIES[detectCategory(goal.title)];
+
+export const getDaysUntilDeadline = (deadline: string): number =>
+  Math.max(0, Math.ceil((new Date(deadline).getTime() - Date.now()) / MS_DAY));
+
+export function getGoalPlanText(ga: GoalAnalysis, goal: Goal, finance: GoalFinance): string {
+  if (ga.status === 'done') return 'Цель достигнута! 🎉';
+  if (ga.status === 'hard') {
+    if (ga.freeCash <= 0 || finance.income <= 0) {
+      return `Кажется, накопить ${goal.target.toLocaleString('ru-RU')} ₽ за ${ga.monthsLeft} мес. будет сложно. Давай перенесём срок или разобьём сумму?`;
+    }
+    return ga.headline;
+  }
+  const monthly = Math.min(ga.requiredMonthly, ga.freeCash || ga.requiredMonthly);
+  return `Откладывай ~${monthly.toLocaleString('ru-RU')} ₽ в месяц — ${ga.sharePct}% свободных денег.`;
+}

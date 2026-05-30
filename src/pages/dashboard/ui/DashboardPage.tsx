@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus } from 'lucide-react';
 import { useUserStore } from '@/entities/user/model/userStore';
-import { useFinanceStore } from '@/entities/finance/model/financeStore';
+import { useFinanceStore, useFinanceAnalysis } from '@/entities/finance/model/financeStore';
 import { useUserTxStore } from '@/entities/finance/model/userTxStore';
+import { useUserGoalsStore } from '@/entities/goal/model/userGoalsStore';
+import { analyzeGoal, getDaysUntilDeadline, getGoalPlanText, type GoalFinance } from '@/entities/goal/model/goalAnalysis';
+import { getDashboardContext } from '@/entities/finance/model/dashboardReadiness';
 import { byCategory, periodRange, inRange, summarize } from '@/entities/finance/model/financeSelectors';
 import { getCategoryMeta } from '@/entities/finance/model/categoryMeta';
 import { analyzeDay } from '@/entities/finance/model/dayAnalytics';
@@ -14,10 +16,10 @@ import { formatCurrency, getGreeting } from '@/shared/lib/formatters';
 import type { AiInsight, CategorySummary, ExpenseCategory, Goal, Transaction } from '@/shared/types';
 import { AnalyticsModal } from '@/widgets/AnalyticsModal';
 import { AddTransactionSheet } from '@/features/add-transaction';
+import { ConnectBankSheet } from '@/features/connect-bank';
 import { AskAiButton, useAskAi } from '@/features/ask-ai';
 import { HomeHero } from './HomeHero';
-import { CashflowWidget } from '@/widgets/cashflow/CashflowWidget';
-import { PatternsWidget } from '@/widgets/patterns/PatternsWidget';
+import { ForecastSection } from '@/widgets/forecast-section/ForecastSection';
 
 // ─── Stagger animation ─────────────────────────────────────────────────────────
 const item = {
@@ -221,21 +223,25 @@ const InsightCard = ({ insight, onDismiss }: { insight: AiInsight; onDismiss: ()
 
 // ─── Goal card (horizontal scroll) ────────────────────────────────────────────
 
-const GoalCard = ({ goal }: { goal: Goal }) => {
-  const pct = Math.round((goal.current / goal.target) * 100);
+const GoalCard = ({ goal, finance }: { goal: Goal; finance: GoalFinance }) => {
+  const ga = analyzeGoal(goal, finance);
+  const daysLeft = getDaysUntilDeadline(goal.deadline);
+  const pct = ga.pct;
+
   return (
-    <div className="flex-shrink-0 w-44 rounded-xl p-4 shadow-card bg-white border border-border-light">
-      <div className="text-xl mb-2">{goal.icon}</div>
-      <p className="text-xs text-text-tertiary mb-0.5 font-medium">Цель</p>
-      <p className="font-bold text-sm text-text-primary leading-tight mb-3">{goal.title}</p>
+    <div className="flex-shrink-0 w-40 rounded-xl p-3.5 shadow-card bg-white border border-border-light">
+      <div className="text-lg mb-1.5">{goal.icon}</div>
+      <p className="font-bold text-sm text-text-primary leading-tight mb-2 line-clamp-2">{goal.title}</p>
       <div className="mb-2">
-        <div className="flex justify-between text-xs font-medium mb-1">
+        <div className="flex justify-between text-[11px] font-medium mb-1">
           <span className="text-text-secondary">{formatCurrency(goal.current, true)}</span>
           <span className="text-text-tertiary">{formatCurrency(goal.target, true)}</span>
         </div>
         <ProgressBar value={pct} color="primary" size="xs" />
       </div>
-      <Badge variant="primary">{pct}%</Badge>
+      <p className="text-[11px] text-text-tertiary">
+        {daysLeft === 0 ? 'Срок сегодня' : `${daysLeft} дн. до срока`}
+      </p>
     </div>
   );
 };
@@ -334,14 +340,41 @@ const PersonalPlanBlock = ({ summary }: { summary: string }) => {
 export const DashboardPage = () => {
   const user = useUserStore(s => s.user);
   const { profile, fetchProfile } = useFinanceStore();
-  const { txs: userTx, addTx } = useUserTxStore();
+  const { txs: userTx, addTx, bankConnected } = useUserTxStore();
+  const { goals: userGoals } = useUserGoalsStore();
   const [visibleInsights, setVisibleInsights] = useState(profile.insights);
   const [selectedDay, setSelectedDay] = useState(() => new Date());
   const [addOpen, setAddOpen] = useState(false);
+  const [bankOpen, setBankOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const allTx = userTx;
   const isToday = selectedDay.toDateString() === new Date().toDateString();
+
+  const goals = useMemo<Goal[]>(
+    () => (userGoals.length ? userGoals : profile.goals),
+    [userGoals, profile.goals],
+  );
+
+  const financeAnalysis = useFinanceAnalysis();
+  const finance = financeAnalysis.finance;
+
+  const dashboardCtx = useMemo(
+    () => getDashboardContext(userTx, profile.balance, user),
+    [userTx, profile.balance, user],
+  );
+
+  const primaryGoal = goals[0];
+  const primaryGoalAnalysis = primaryGoal ? analyzeGoal(primaryGoal, finance) : null;
+  const primaryGoalPlan = primaryGoal && primaryGoalAnalysis
+    ? getGoalPlanText(primaryGoalAnalysis, primaryGoal, finance)
+    : null;
+
+  const freeCash = Math.max(0, finance.income - finance.expenses);
+  const yearSavings = freeCash * 12;
+  const yearHealth = dashboardCtx.forecastUnlocked && financeAnalysis.health.score != null
+    ? financeAnalysis.health.score
+    : 0;
 
   // Категории за текущий месяц из реальных транзакций
   const monthRange = useMemo(() => periodRange('month'), []);
@@ -417,8 +450,11 @@ export const DashboardPage = () => {
         </motion.div>
 
         {isToday && (<>
-          {/* ── Home hero (только сегодня) ── */}
-          <HomeHero />
+          {/* ── Блок 1–2: баланс + рекомендация ── */}
+          <HomeHero
+            onConnectBank={() => setBankOpen(true)}
+            onAddTransaction={() => setAddOpen(true)}
+          />
 
           {/* ── AI Insights ── */}
           {visibleInsights.length > 0 && (
@@ -429,19 +465,7 @@ export const DashboardPage = () => {
             </motion.div>
           )}
 
-          {/* ── Goals horizontal scroll ── */}
-          <motion.div variants={item}>
-            {/* <div className="flex items-center justify-between px-5 mb-3">
-              <h2 className="text-lg font-bold text-text-primary">Обзор</h2>
-              <span className="text-xs text-text-tertiary">Листай вправо →</span>
-            </div>
-            <div ref={scrollRef}
-              className="flex gap-3 overflow-x-auto scrollbar-hide px-5 pb-1">
-              {profile.goals.map(goal => <GoalCard key={goal.id} goal={goal} />)}
-            </div> */}
-          </motion.div>
-
-          {/* ── Expenses breakdown ── */}
+          {/* ── Блок 3: Расходы за месяц ── */}
           <motion.div variants={item} className="px-5 mb-4 mt-4">
             <Card variant="default" padding="lg">
               <div className="flex items-center justify-between mb-4">
@@ -474,28 +498,66 @@ export const DashboardPage = () => {
                   })()}
                 </>
               ) : (
-                <div className="flex flex-col items-center gap-3 py-6 text-center">
-                  <span className="text-3xl">📊</span>
-                  <p className="text-sm text-text-tertiary leading-snug">
-                    Добавьте первые операции,<br />чтобы увидеть расходы по категориям
+                <button
+                  onClick={() => (bankConnected ? setAddOpen(true) : setBankOpen(true))}
+                  className="w-full flex flex-col items-center gap-3 py-8 px-4 rounded-2xl bg-bg-muted border-2 border-dashed border-border active:scale-[0.98] transition-transform"
+                >
+                  <span className="text-3xl">{bankConnected ? '☕' : '🏦'}</span>
+                  <p className="text-sm font-semibold text-text-primary leading-snug">
+                    {bankConnected ? 'Ты ещё ничего не добавил' : 'Подключи банк'}
                   </p>
-                  <AskAiButton
-                    variant="chip"
-                    question="Как начать отслеживать расходы? Какие категории мне важно контролировать?"
-                    label="Спросить AI"
-                  />
-                </div>
+                  <p className="text-xs text-text-tertiary leading-snug max-w-[240px]">
+                    {bankConnected
+                      ? 'Нажми сюда, чтобы записать первую покупку — например, кофе'
+                      : 'Операции загрузятся автоматически — аренда, подписки, покупки'}
+                  </p>
+                </button>
               )}
             </Card>
           </motion.div>
 
-          {/* ── Cashflow + Patterns ── */}
-          {user?.email && (
-            <motion.div variants={item} className="px-5 mb-4 flex flex-col gap-3">
-              <CashflowWidget userId={user.email} />
-              <PatternsWidget userId={user.email} />
+          {/* ── Блок 4: Мои цели (горизонтальный скролл) ── */}
+          {goals.length > 0 && (
+            <motion.div variants={item} className="mb-4">
+              <div className="flex items-center justify-between px-5 mb-3">
+                <h2 className="text-base font-bold text-text-primary">Мои цели</h2>
+                <span className="text-xs text-text-tertiary">Листай вправо →</span>
+              </div>
+              <div ref={scrollRef} className="flex gap-3 overflow-x-auto scrollbar-hide px-5 pb-1">
+                {goals.map(goal => (
+                  <GoalCard key={goal.id} goal={goal} finance={finance} />
+                ))}
+              </div>
+              {primaryGoalPlan && primaryGoalAnalysis?.status === 'hard' && (
+                <div className="mx-5 mt-3 rounded-xl bg-warning-light p-3">
+                  <p className="text-xs text-text-secondary leading-snug">
+                    <span className="font-semibold text-text-primary">💡 Совет по «{primaryGoal?.title}»:</span>{' '}
+                    {primaryGoalPlan}
+                  </p>
+                  <div className="mt-2">
+                    <AskAiButton
+                      variant="chip"
+                      question={`У меня цель «${primaryGoal?.title}» на ${formatCurrency(primaryGoal?.target ?? 0)}. ${primaryGoalPlan} Помоги составить реалистичный план.`}
+                      label="Обсудить с AI"
+                    />
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
+
+          {/* ── Блок 5: Прогнозы (заблокированы до 5 трат) ── */}
+          <motion.div variants={item} className="px-5 mb-4">
+            <ForecastSection
+              unlocked={dashboardCtx.forecastUnlocked}
+              remaining={dashboardCtx.forecastRemaining}
+              expenseCount={dashboardCtx.expenseCount}
+              userId={user?.email}
+              yearSavings={yearSavings}
+              yearHealth={yearHealth}
+              onAddTransaction={() => (bankConnected ? setAddOpen(true) : setBankOpen(true))}
+            />
+          </motion.div>
 
           {/* ── Upcoming payments (только если есть) ── */}
           {profile.upcomingPayments.length > 0 && (
@@ -540,22 +602,14 @@ export const DashboardPage = () => {
         )}
       </motion.div>
 
-      {/* ── FAB: добавить операцию ── */}
-      <div className="fixed inset-x-0 bottom-24 z-40 pointer-events-none">
-        <div className="max-w-mobile mx-auto px-5 flex justify-end">
-          <button
-            onClick={() => setAddOpen(true)}
-            className="pointer-events-auto w-14 h-14 rounded-full bg-gradient-primary text-white shadow-primary flex items-center justify-center active:scale-90 transition-transform"
-          >
-            <Plus size={26} />
-          </button>
-        </div>
-      </div>
+
+      <ConnectBankSheet open={bankOpen} onClose={() => setBankOpen(false)} />
 
       <AddTransactionSheet
         open={addOpen}
         onClose={() => setAddOpen(false)}
         onAdd={addTx}
+        onConnectBank={() => { setAddOpen(false); setBankOpen(true); }}
         defaultDate={isToday ? undefined : selectedDay.toISOString()}
       />
 

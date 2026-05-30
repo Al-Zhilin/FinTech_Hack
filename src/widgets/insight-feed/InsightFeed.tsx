@@ -1,4 +1,5 @@
 import { useFinanceStore } from '@/entities/finance/model/financeStore';
+import { useUserTxStore } from '@/entities/finance/model/userTxStore';
 import { buildInsights } from '@/entities/insight/model/insights';
 import { InsightCardBlock } from './InsightCardBlock';
 
@@ -11,7 +12,8 @@ interface InsightFeedProps {
 /** Лента блоков-инсайтов с вопросами к AI — для встраивания в страницы. */
 export const InsightFeed = ({ limit, title = 'Аналитика от AI' }: InsightFeedProps) => {
   const profile = useFinanceStore(s => s.profile);
-  const insights = buildInsights(profile);
+  const txCount = useUserTxStore(s => s.txs.length);
+  const insights = buildInsights(profile, txCount);
   const shown = limit ? insights.slice(0, limit) : insights;
 
   return (

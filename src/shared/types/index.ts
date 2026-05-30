@@ -118,6 +118,9 @@ export interface AiInsight {
 
 export interface FinancialProfile {
   balance: number;
+  safeAmount: number;
+  healthScore: number | null;
+  healthLabel: string;
   monthlyIncome: number;
   monthlySpent: number;
   monthlyBudget: number;

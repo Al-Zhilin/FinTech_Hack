@@ -4,6 +4,7 @@ import { Coins, Trophy, Gift, Swords, BookOpen, CalendarCheck, ArrowLeft, Check 
 import { useArenaStore, isDailyQuizDone, isStarterClaimed } from '@/entities/arena/model/arenaStore';
 import { REWARDS } from '@/entities/arena/model/copyCat';
 import { CopyCat } from './CopyCat';
+import { StreakTracker } from './StreakTracker';
 import { QuizGame, type GameMode } from './QuizGame';
 import { Shop } from './Shop';
 
@@ -48,58 +49,63 @@ export const ArenaPage = () => {
   // ── Главный экран Арены ──
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      className="relative flex flex-col min-h-dvh bg-gradient-to-b from-primary-light/50 to-bg-base px-5 pt-12 pb-6 overflow-hidden">
+      className="relative flex flex-col min-h-dvh bg-gradient-to-b from-primary-light/50 to-bg-base overflow-hidden overflow-y-auto">
 
-      {/* Верхняя строка: баланс + рейтинг */}
-      <div className="flex items-center justify-between mb-2 z-10">
-        <div className="flex items-center gap-1.5 bg-white shadow-card text-warning font-extrabold px-3.5 py-2 rounded-pill">
-          <Coins size={18} /> <span className="text-text-primary">{coins}</span>
+      <div className="px-5 pt-12 pb-6 flex flex-col gap-4">
+        {/* Верхняя строка: баланс + рейтинг */}
+        <div className="flex items-center justify-between z-10">
+          <div className="flex items-center gap-1.5 bg-white shadow-card text-warning font-extrabold px-3.5 py-2 rounded-pill">
+            <Coins size={18} /> <span className="text-text-primary">{coins}</span>
+          </div>
+          <div>
+            <h1 className="text-xl font-extrabold text-text-primary text-center">Арена</h1>
+            <p className="text-xs text-text-secondary text-center">Корми КопиКота каждый день</p>
+          </div>
+          <div className="flex items-center gap-1.5 bg-white shadow-card px-3.5 py-2 rounded-pill">
+            <Trophy size={16} className="text-primary" />
+            <span className="text-sm font-bold text-text-primary">#{rank}</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 bg-white shadow-card px-3.5 py-2 rounded-pill">
-          <Trophy size={16} className="text-primary" />
-          <span className="text-sm font-bold text-text-primary">#{rank}</span>
-          <span className="text-xs text-text-tertiary">за неделю</span>
+
+        {/* Кот по центру */}
+        <div className="flex items-center justify-center z-10">
+          <CopyCat size={220} festive={festive} onWakeUp={handleWakeUp} />
         </div>
-      </div>
 
-      <div className="text-center mb-1 z-10">
-        <h1 className="text-2xl font-extrabold text-text-primary">Арена</h1>
-        <p className="text-sm text-text-secondary">Играй, копи монеты, корми КопиКота</p>
-      </div>
+        {/* ── Трекер серии ── */}
+        <div className="z-10">
+          <StreakTracker />
+        </div>
 
-      {/* Кот по центру */}
-      <div className="flex-1 flex items-center justify-center my-2 z-10">
-        <CopyCat size={240} festive={festive} onWakeUp={handleWakeUp} />
-      </div>
-
-      {/* Индикатор «вопроса дня» */}
-      <button onClick={() => setView(dailyDone ? 'play' : { mode: 'daily' })}
-        className={`flex items-center gap-2 self-center mb-4 px-4 py-2 rounded-pill text-sm font-bold z-10 transition-all ${
-          dailyDone ? 'bg-success-light text-success' : 'bg-white shadow-card text-primary animate-pulse'}`}>
-        {dailyDone ? <><Check size={15} /> Вопрос дня пройден</> : <><CalendarCheck size={15} /> Пройди вопрос дня · +{REWARDS.dailyQuestion}</>}
-      </button>
-
-      {/* Ежедневный стартовый пак */}
-      {!starterClaimed && (
-        <motion.button initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-          onClick={() => claimStarterPack()}
-          className="flex items-center justify-center gap-2 self-center mb-4 px-4 py-2 rounded-pill text-sm font-bold bg-gradient-primary text-white shadow-primary z-10">
-          <Gift size={16} /> Забрать стартовый пак · +{REWARDS.starterPack}
-        </motion.button>
-      )}
-
-      {/* Две большие кнопки */}
-      <div className="grid grid-cols-2 gap-3 z-10">
-        <button onClick={() => setView('play')}
-          className="flex flex-col items-center gap-1.5 py-5 rounded-3xl bg-gradient-primary text-white shadow-primary active:scale-[0.97] transition-transform">
-          <Swords size={26} />
-          <span className="font-extrabold text-lg">Сыграть</span>
+        {/* Индикатор «вопроса дня» */}
+        <button onClick={() => setView(dailyDone ? 'play' : { mode: 'daily' })}
+          className={`flex items-center gap-2 self-center px-4 py-2 rounded-pill text-sm font-bold z-10 transition-all ${
+            dailyDone ? 'bg-success-light text-success' : 'bg-white shadow-card text-primary animate-pulse'}`}>
+          {dailyDone ? <><Check size={15} /> Вопрос дня пройден</> : <><CalendarCheck size={15} /> Пройди вопрос дня · +{REWARDS.dailyQuestion}</>}
         </button>
-        <button onClick={() => setView('shop')}
-          className="flex flex-col items-center gap-1.5 py-5 rounded-3xl bg-white shadow-card text-primary active:scale-[0.97] transition-transform">
-          <Gift size={26} />
-          <span className="font-extrabold text-lg">Витрина</span>
-        </button>
+
+        {/* Ежедневный стартовый пак */}
+        {!starterClaimed && (
+          <motion.button initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            onClick={() => claimStarterPack()}
+            className="flex items-center justify-center gap-2 self-center px-4 py-2 rounded-pill text-sm font-bold bg-gradient-primary text-white shadow-primary z-10">
+            <Gift size={16} /> Забрать стартовый пак · +{REWARDS.starterPack}
+          </motion.button>
+        )}
+
+        {/* Две большие кнопки */}
+        <div className="grid grid-cols-2 gap-3 z-10">
+          <button onClick={() => setView('play')}
+            className="flex flex-col items-center gap-1.5 py-5 rounded-3xl bg-gradient-primary text-white shadow-primary active:scale-[0.97] transition-transform">
+            <Swords size={26} />
+            <span className="font-extrabold text-lg">Сыграть</span>
+          </button>
+          <button onClick={() => setView('shop')}
+            className="flex flex-col items-center gap-1.5 py-5 rounded-3xl bg-white shadow-card text-primary active:scale-[0.97] transition-transform">
+            <Gift size={26} />
+            <span className="font-extrabold text-lg">Витрина</span>
+          </button>
+        </div>
       </div>
     </motion.div>
   );

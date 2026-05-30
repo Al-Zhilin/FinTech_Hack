@@ -5,6 +5,9 @@ import type { FinancialProfile } from '@/shared/types';
 
 export const MOCK_FINANCE: FinancialProfile = {
   balance: 87_430,
+  safeAmount: 24_500,
+  healthScore: 72,
+  healthLabel: 'Под контролем',
   monthlyIncome: 120_000,
   monthlySpent: 68_200,
   monthlyBudget: 90_000,

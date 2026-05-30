@@ -65,7 +65,13 @@ export const CashflowWidget = ({ userId }: Props) => {
       </div>
 
       {data.error ? (
-        <p className="text-sm text-danger">{data.error}</p>
+        <div className="rounded-xl bg-bg-muted p-3">
+          <p className="text-sm text-text-secondary leading-snug">
+            {/профил/i.test(data.error)
+              ? 'Запишите несколько трат и укажите остаток — тогда прогноз до зарплаты станет доступен.'
+              : data.error}
+          </p>
+        </div>
       ) : (
         <>
           {data.verdict && (

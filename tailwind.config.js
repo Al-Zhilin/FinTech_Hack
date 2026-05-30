@@ -67,7 +67,7 @@ export default {
         'card-hover': '0 8px 24px rgba(0,0,0,0.10)',
         'primary': '0 8px 24px rgba(232,133,106,0.35)',
         'purple': '0 8px 24px rgba(184,126,255,0.30)',
-        'bottom-nav': '0 -1px 0 rgba(0,0,0,0.06), 0 -4px 20px rgba(0,0,0,0.04)',
+        'bottom-nav': '0 1px 10px',
       },
       spacing: {
         'safe-bottom': 'env(safe-area-inset-bottom, 0px)',

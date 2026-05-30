@@ -33,6 +33,65 @@
     background: #ECEAE6;
   }
 
+  /* ── Десктопная адаптация (≥768px) ─────────────────────────────────────
+     Мобильное приложение перекомпоновывается в десктопное «окно»:
+       • авторизованный апп  → боковая панель (SideNav) + панель контента;
+       • онбординг (без меню) → центрированный «фрейм-устройство».
+     Колонка контента (.app-frame) через `transform` создаёт containing
+     block, поэтому fixed-элементы (FAB, модалки, шторки, тосты) держатся
+     внутри панели контента, а не уезжают на всю ширину браузера.
+     Двойные классы (.app-shell.max-w-mobile) нужны, чтобы переопределить
+     утилиты Tailwind max-w-mobile / h-dvh. Мобильная вёрстка (<768px)
+     не затрагивается. */
+  @media (min-width: 768px) {
+    #root {
+      align-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(110% 70% at 12% 8%, rgba(232, 133, 106, 0.16), transparent 55%),
+        radial-gradient(110% 70% at 88% 92%, rgba(184, 126, 255, 0.18), transparent 55%),
+        linear-gradient(155deg, #F4F0EC 0%, #ECE8F2 100%);
+    }
+
+    /* ── Окно авторизованного приложения: сайдбар + контент ── */
+    .app-shell.max-w-mobile {
+      max-width: 960px;
+      width: 100%;
+    }
+    .app-shell.h-dvh {
+      height: min(100dvh - 48px, 960px);
+      border-radius: 28px;
+      box-shadow:
+        0 32px 64px -16px rgba(31, 28, 46, 0.32),
+        0 0 0 1px rgba(31, 28, 46, 0.05);
+    }
+
+    /* Показываем боковую панель, прячем нижнее меню */
+    .app-side-nav { display: flex; }
+    .app-bottom-nav { display: none; }
+
+    /* Колонка контента = containing block для fixed-элементов */
+    .app-frame {
+      transform: translateZ(0);
+      border-left: 1px solid var(--border-color, rgba(0,0,0,0.06));
+    }
+    /* Страницы внутри панели заполняют её по высоте, а не тянутся на 100dvh */
+    .app-frame .min-h-dvh { min-height: 100%; }
+
+    /* ── Онбординг (без сайдбара): центрированный фрейм-устройство ── */
+    .max-w-mobile.h-dvh:not(.app-shell),
+    .max-w-mobile.min-h-dvh:not(.app-shell) {
+      height: min(100dvh - 48px, 940px);
+      min-height: 0;
+      border-radius: 32px;
+      transform: translateZ(0);
+      box-shadow:
+        0 32px 64px -16px rgba(31, 28, 46, 0.32),
+        0 0 0 1px rgba(31, 28, 46, 0.05);
+    }
+    .max-w-mobile.h-dvh:not(.app-shell) { overflow: hidden; }
+  }
+
   input, textarea, button {
     font-family: inherit;
   }
