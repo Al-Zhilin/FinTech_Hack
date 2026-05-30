@@ -3,11 +3,11 @@ import { cn } from '@/shared/lib/cn';
 import { useT } from '@/shared/config/i18n';
 
 const NAV_ITEMS = [
-  { to: '/dashboard', icon: HomeIcon,      tkey: 'nav.home' },
-  { to: '/finance',   icon: WalletIcon,    tkey: 'nav.finance' },
-  { to: '/chat',      icon: AiIcon,        tkey: 'nav.ai',     highlight: true },
-  { to: '/goals',     icon: GoalsIcon,     tkey: 'nav.goals' },
-  { to: '/profile',   icon: ProfileIcon,   tkey: 'nav.profile' },
+  { to: '/dashboard', icon: HomeIcon,      tkey: 'nav.home',    highlight: false },
+  { to: '/finance',   icon: WalletIcon,    tkey: 'nav.finance', highlight: false },
+  { to: '/chat',      icon: AiIcon,        tkey: 'nav.ai',      highlight: true },
+  { to: '/goals',     icon: GoalsIcon,     tkey: 'nav.goals',   highlight: false },
+  { to: '/profile',   icon: ProfileIcon,   tkey: 'nav.profile', highlight: false },
 ] as const;
 
 export const BottomNav = () => {

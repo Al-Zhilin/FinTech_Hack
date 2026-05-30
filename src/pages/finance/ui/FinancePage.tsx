@@ -22,7 +22,7 @@ import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { formatCurrency, formatDate } from '@/shared/lib/formatters';
-import type { FinancePeriod, Transaction } from '@/shared/types';
+import type { FinancePeriod, Transaction, TxType } from '@/shared/types';
 
 const item = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
@@ -184,7 +184,7 @@ export const FinancePage = () => {
                 <Tooltip
                   cursor={{ fill: 'rgba(0,0,0,0.04)' }}
                   contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 16px rgba(0,0,0,0.1)', fontSize: 12 }}
-                  formatter={(v: number, name) => [formatCurrency(v, true), name === 'expense' ? 'Расход' : 'Доход']}
+                  formatter={(v, name) => [formatCurrency(Number(v), true), name === 'expense' ? 'Расход' : 'Доход']}
                 />
                 <Bar dataKey="expense" radius={[4, 4, 0, 0]} fill="#E8856A" />
               </BarChart>

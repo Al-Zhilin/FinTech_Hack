@@ -24,7 +24,7 @@ import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { ProgressBar } from '@/shared/ui/ProgressBar';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
-import { formatCurrency, formatDate, CURRENCIES } from '@/shared/lib/formatters';
+import { formatCurrency, CURRENCIES } from '@/shared/lib/formatters';
 import type { FinancialGoal } from '@/shared/types';
 
 const item = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
