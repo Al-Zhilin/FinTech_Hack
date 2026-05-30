@@ -16,6 +16,15 @@ router = APIRouter()
 _NO_CONNECTION = "Нет соединения с AI-сервером"
 
 
+def _to_float(value) -> float | None:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _map_ai_profile_to_user_profile(ai_profile: dict) -> dict:
     finances: dict = ai_profile.get("finances") or {}
     meta: dict = ai_profile.get("meta") or {}
@@ -25,11 +34,11 @@ def _map_ai_profile_to_user_profile(ai_profile: dict) -> dict:
         goals.append(finances["financial_goal"])
 
     return {
-        "monthly_income": finances.get("monthly_income"),
-        "monthly_expenses": finances.get("monthly_expenses_estimate"),
-        "monthly_debt_payments": finances.get("monthly_debt_payments"),
-        "savings": finances.get("savings"),
-        "financial_goal_amount": finances.get("financial_goal_amount"),
+        "monthly_income": _to_float(finances.get("monthly_income")),
+        "monthly_expenses": _to_float(finances.get("monthly_expenses_estimate")),
+        "monthly_debt_payments": _to_float(finances.get("monthly_debt_payments")),
+        "savings": _to_float(finances.get("savings")),
+        "financial_goal_amount": _to_float(finances.get("financial_goal_amount")),
         "goals": goals,
         "financial_literacy": meta.get("financial_literacy"),
     }
