@@ -60,7 +60,7 @@ class OllamaClient:
                 raise
 
         logger.error(f"[llm] Ollama 500 after {_RETRY_ATTEMPTS} retries — model={model}")
-        raise last_exc
+        raise last_exc or RuntimeError(f"Ollama 500 after {_RETRY_ATTEMPTS} retries — model={model}")
 
     def health_check(self) -> bool:
         try:

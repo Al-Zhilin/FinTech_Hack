@@ -15,19 +15,46 @@ _prompts: dict = {}
 # Predefined question queue — LLM picks next question, Python enforces progression
 PHASE_QUESTIONS = {
     1: [
-        "Привет! Чтобы лучше понять твою ситуацию, расскажи — чем занимаешься в свободное время?",
-        "Какими приложениями или сервисами пользуешься каждый день — соцсети, музыка, доставка?",
+        {
+            "question": "Привет! Чтобы лучше понять твою ситуацию, расскажи — чем занимаешься в свободное время?",
+            "answers": ["Спорт и активный отдых", "Кино, сериалы, игры", "Путешествия и кафе"],
+        },
+        {
+            "question": "Какими приложениями или сервисами пользуешься каждый день — соцсети, музыка, доставка?",
+            "answers": ["Яндекс Плюс, доставка еды", "Spotify, Netflix, YouTube", "ВКонтакте, Telegram, TikTok"],
+        },
     ],
     2: [
-        "Как часто ходишь в кафе или рестораны — редко, пару раз в месяц или часто?",
-        "Есть ли платные подписки — стриминг, фитнес, облако и т.д.?",
-        "Как добираешься до работы или учёбы — на своей машине, транспорте или такси?",
+        {
+            "question": "Как часто ходишь в кафе или рестораны — редко, пару раз в месяц или часто?",
+            "answers": ["Редко, в основном готовлю дома", "Пару раз в месяц", "Часто, почти каждую неделю"],
+        },
+        {
+            "question": "Есть ли платные подписки — стриминг, фитнес, облако и т.д.?",
+            "answers": ["Нет подписок", "Есть 1–2 (музыка или видео)", "Несколько: стриминг, фитнес, облако"],
+        },
+        {
+            "question": "Как добираешься до работы или учёбы — на своей машине, транспорте или такси?",
+            "answers": ["На общественном транспорте", "На своей машине", "Такси или каршеринг"],
+        },
     ],
     3: [
-        "Переходим к финансам — примерно какой у тебя ежемесячный доход? Можно диапазоном, не обязательно точно.",
-        "Есть ли обязательные платежи каждый месяц — аренда, ипотека, кредиты?",
-        "Есть ли какие-то накопления или финансовая подушка?",
-        "И последнее — какая у тебя главная финансовая цель на ближайший год?",
+        {
+            "question": "Переходим к финансам — примерно какой у тебя ежемесячный доход? Можно диапазоном, не обязательно точно.",
+            "answers": ["До 50 000 ₽", "50 000 – 100 000 ₽", "Более 100 000 ₽"],
+        },
+        {
+            "question": "Есть ли обязательные платежи каждый месяц — аренда, ипотека, кредиты?",
+            "answers": ["Нет обязательных платежей", "Аренда жилья", "Ипотека или кредит"],
+        },
+        {
+            "question": "Есть ли какие-то накопления или финансовая подушка?",
+            "answers": ["Нет накоплений", "Есть немного, до 3 месяцев расходов", "Есть подушка более 3 месяцев"],
+        },
+        {
+            "question": "И последнее — какая у тебя главная финансовая цель на ближайший год?",
+            "answers": ["Создать финансовую подушку", "Погасить кредит или долги", "Накопить на крупную покупку"],
+        },
     ],
 }
 
@@ -65,16 +92,17 @@ def _count_questions_by_phase(history: list[dict]) -> dict[int, int]:
     return counts
 
 
-def _next_question(phase_counts: dict[int, int]) -> tuple[str | None, int, bool]:
-    """Returns (question_text, phase, complete)."""
+def _next_question(phase_counts: dict[int, int]) -> tuple[str | None, list[str], int, bool]:
+    """Returns (question_text, suggested_answers, phase, complete)."""
     for phase in (1, 2, 3):
         asked = phase_counts.get(phase, 0)
         limit = PHASE_LIMITS[phase]
         questions = PHASE_QUESTIONS[phase]
         if asked < limit:
             idx = min(asked, len(questions) - 1)
-            return questions[idx], phase, False
-    return None, 3, True
+            item = questions[idx]
+            return item["question"], item["answers"], phase, False
+    return None, [], 3, True
 
 
 def _extract_data_from_answer(user_message: str, history: list[dict], phase: int) -> dict:
@@ -114,7 +142,7 @@ async def process_onboarding(user_id: str, user_message: str, history: list[dict
     save_onboarding_message(user_id, "user", user_message, current_phase, extracted or None)
 
     # Determine next question
-    next_q, next_phase, complete = _next_question(phase_counts)
+    next_q, suggested_answers, next_phase, complete = _next_question(phase_counts)
 
     if complete:
         # Build and save profile from full history extraction
@@ -125,6 +153,7 @@ async def process_onboarding(user_id: str, user_message: str, history: list[dict
         save_onboarding_message(user_id, "assistant", summary, 3)
         return {
             "next_question": None,
+            "suggested_answers": [],
             "phase": 3,
             "onboarding_complete": True,
             "extracted_data": extracted,
@@ -134,6 +163,7 @@ async def process_onboarding(user_id: str, user_message: str, history: list[dict
     save_onboarding_message(user_id, "assistant", next_q, next_phase)
     return {
         "next_question": next_q,
+        "suggested_answers": suggested_answers,
         "phase": next_phase,
         "onboarding_complete": False,
         "extracted_data": extracted,

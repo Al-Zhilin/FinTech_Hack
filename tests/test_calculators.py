@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from app.calculators import credit_traffic_light, financial_health_score, savings_plan
+from app.calculators import cashflow_forecast, credit_traffic_light, financial_health_score, savings_plan
 
 
 def test_credit_traffic_light_green():
@@ -85,6 +85,45 @@ def test_savings_plan_realistic():
     assert result["months_to_goal"] == 50
     assert result["realistic"] is True
     assert "Отпуск" in result["advice"]
+
+
+def test_cashflow_enough():
+    result = cashflow_forecast(
+        current_balance=50_000,
+        daily_avg_spend=1_000,
+        days_to_salary=20,
+        fixed_payments=[],
+    )
+    assert result["projected_balance"] == 30_000.0
+    assert result["will_be_negative"] is False
+    assert result["shortage"] == 0.0
+    assert result["danger_day"] is None
+
+
+def test_cashflow_not_enough():
+    result = cashflow_forecast(
+        current_balance=10_000,
+        daily_avg_spend=1_000,
+        days_to_salary=20,
+        fixed_payments=[],
+    )
+    assert result["will_be_negative"] is True
+    assert result["shortage"] == 10_000.0
+    assert result["projected_balance"] == -10_000.0
+    assert result["danger_day"] == 10
+
+
+def test_cashflow_with_fixed_payment():
+    result = cashflow_forecast(
+        current_balance=30_000,
+        daily_avg_spend=500,
+        days_to_salary=20,
+        fixed_payments=[{"amount": 15_000, "days_from_now": 5}],
+    )
+    # 30000 - 500*20 - 15000 = 5000
+    assert result["projected_balance"] == 5_000.0
+    assert result["will_be_negative"] is False
+    assert result["danger_day"] is None
 
 
 def test_savings_plan_no_free_money():

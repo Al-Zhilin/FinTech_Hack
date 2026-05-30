@@ -7,7 +7,7 @@ from typing import Any, TypedDict
 import yaml
 from langgraph.graph import END, StateGraph
 
-from .calculators import credit_traffic_light, financial_health_score, savings_plan
+from .calculators import cashflow_forecast, credit_traffic_light, financial_health_score, savings_plan
 from .connectors import web_search
 from .llm import OllamaClient
 
@@ -35,6 +35,7 @@ class AgentState(TypedDict):
     # Analyst output
     answer_text: str
     structured: dict[str, Any]
+    table: dict | None
     # Error propagation
     error: str | None
 
@@ -57,6 +58,11 @@ _CLIENT = OllamaClient(os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
 
 _LOAN_KEYWORDS = re.compile(
     r"\b(кредит\w*|займ\w*|заём\w*|ипотек\w*|рассрочк\w*)\b",
+    re.IGNORECASE,
+)
+
+_CASHFLOW_KEYWORDS = re.compile(
+    r"хватит|до зарплаты|остаток|сколько осталось|дотяну|не хватает|баланс",
     re.IGNORECASE,
 )
 
@@ -124,9 +130,11 @@ def _build_profile_block(profile: dict) -> str:
         ("age", "Возраст"),
         ("occupation", "Профессия"),
         ("monthly_income", "Доход в месяц (руб)"),
-        ("monthly_expenses", "Расходы в месяц (руб)"),
+        ("monthly_expenses_estimate", "Расходы в месяц (руб)"),
         ("monthly_debt_payments", "Платежи по долгам в месяц (руб)"),
         ("savings", "Накопления (руб)"),
+        ("current_balance", "Текущий остаток (руб)"),
+        ("days_to_salary", "Дней до зарплаты"),
         ("risk_tolerance", "Риск-профиль"),
     ]
     parts = [f"- {label}: {profile[key]}" for key, label in labels if profile.get(key) is not None]
@@ -149,7 +157,7 @@ def _run_calculator(state: AgentState) -> dict | None:
     income = profile.get("monthly_income")
 
     if income:
-        expenses = profile.get("monthly_expenses") or 0.0
+        expenses = profile.get("monthly_expenses_estimate") or 0.0
         savings_val = profile.get("savings") or 0.0
         debt = profile.get("monthly_debt_payments") or 0.0
 
@@ -175,6 +183,17 @@ def _run_calculator(state: AgentState) -> dict | None:
             )
             result["traffic_light"] = traffic
             logger.info(f"[calculator] traffic_light={traffic['color']} pti_after={traffic['pti_after']}")
+
+    if _CASHFLOW_KEYWORDS.search(query):
+        monthly_expenses = profile.get("monthly_expenses_estimate") or 0.0
+        cashflow = cashflow_forecast(
+            current_balance=profile.get("current_balance") or 0.0,
+            daily_avg_spend=monthly_expenses / 30 if monthly_expenses else 0.0,
+            days_to_salary=profile.get("days_to_salary") or 15,
+            fixed_payments=profile.get("fixed_payments") or [],
+        )
+        result["cashflow"] = cashflow
+        logger.info(f"[calculator] cashflow projected={cashflow['projected_balance']} negative={cashflow['will_be_negative']}")
 
     return result or None
 
@@ -206,9 +225,20 @@ def node_analyst(state: AgentState) -> AgentState:
     raw = ""
     answer_text = "Не удалось получить ответ."
     structured: dict[str, Any] = {}
+    table: dict | None = None
 
     try:
         raw = _CLIENT.generate(model=ANALYST_MODEL, prompt=prompt, system=cfg["system"])
+
+        # Extract <table>...</table> before JSON parsing
+        table_match = re.search(r"<table>(.*?)</table>", raw, re.DOTALL)
+        if table_match:
+            try:
+                table = json.loads(table_match.group(1).strip())
+            except Exception:
+                table = None
+            raw = raw[:table_match.start()] + raw[table_match.end():]
+
         data = _parse_json(raw)
         answer_text = data.get("text", raw)
         structured = data.get("structured", {})
@@ -220,8 +250,8 @@ def node_analyst(state: AgentState) -> AgentState:
         if calc_result:
             structured["calculator_result"] = calc_result
 
-    logger.info(f"[analyst] done — answer_len={len(answer_text)}")
-    return {**state, "answer_text": answer_text, "structured": structured}
+    logger.info(f"[analyst] done — answer_len={len(answer_text)} table={'yes' if table else 'no'}")
+    return {**state, "answer_text": answer_text, "structured": structured, "table": table}
 
 
 # ── Routing ────────────────────────────────────────────────────────────────────
@@ -265,12 +295,14 @@ def run_graph(user_id: str, query: str, context: dict, mode: str) -> dict:
         "sources": [],
         "answer_text": "",
         "structured": {},
+        "table": None,
         "error": None,
     }
 
     result = GRAPH.invoke(initial)
     return {
         "text": result.get("answer_text", ""),
+        "table": result.get("table"),
         "structured": result.get("structured", {}),
         "sources": result.get("sources", []),
         "intent": result.get("intent", "question"),

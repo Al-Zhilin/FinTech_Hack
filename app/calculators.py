@@ -177,3 +177,128 @@ def savings_plan(
         "goal_name": goal_name,
         "advice": advice,
     }
+
+
+def cashflow_forecast(
+    current_balance: float,
+    daily_avg_spend: float,
+    days_to_salary: int,
+    fixed_payments: list[dict],
+) -> dict:
+    balance = max(float(current_balance), 0.0)
+    daily = max(float(daily_avg_spend), 0.0)
+    days = max(int(days_to_salary), 0)
+
+    valid_payments = [
+        p for p in (fixed_payments or [])
+        if isinstance(p, dict)
+        and isinstance(p.get("amount"), (int, float))
+        and isinstance(p.get("days_from_now"), (int, float))
+        and 0 < p["days_from_now"] <= days
+    ]
+    fixed_total = sum(p["amount"] for p in valid_payments)
+    projected = balance - daily * days - fixed_total
+
+    will_be_negative = projected < 0
+    shortage = round(abs(projected), 2) if will_be_negative else 0.0
+
+    danger_day = _find_danger_day(balance, daily, days, valid_payments)
+
+    if will_be_negative:
+        verdict = f"Денег не хватит до зарплаты — дефицит {shortage:,.0f} ₽."
+        if danger_day is not None:
+            verdict += f" Закончатся примерно через {danger_day} дн."
+    else:
+        verdict = f"Денег хватит до зарплаты, остаток ~{projected:,.0f} ₽."
+
+    return {
+        "projected_balance": round(projected, 2),
+        "will_be_negative": will_be_negative,
+        "shortage": shortage,
+        "days_to_salary": days,
+        "daily_avg_spend": round(daily, 2),
+        "danger_day": danger_day,
+        "verdict": verdict,
+    }
+
+
+def cashflow_forecast_detailed(
+    current_balance: float,
+    monthly_expenses: float,
+    monthly_debt_payments: float,
+    days_to_salary: int,
+    fixed_payments: list[dict],
+) -> dict:
+    days = max(int(days_to_salary), 0)
+    balance_start = max(float(current_balance), 0.0)
+
+    valid_fixed = [
+        p for p in (fixed_payments or [])
+        if isinstance(p, dict)
+        and isinstance(p.get("amount"), (int, float))
+        and isinstance(p.get("days_from_now"), (int, float))
+        and 0 < p["days_from_now"] <= days
+    ]
+
+    fixed_total = sum(p["amount"] for p in valid_fixed)
+    daily_burn = max((float(monthly_expenses) - fixed_total) / 30, 0.0) if days else 0.0
+
+    base = cashflow_forecast(
+        current_balance=balance_start,
+        daily_avg_spend=daily_burn,
+        days_to_salary=days,
+        fixed_payments=valid_fixed,
+    )
+
+    payments_by_day: dict[int, list[dict]] = {}
+    for p in valid_fixed:
+        payments_by_day.setdefault(int(p["days_from_now"]), []).append(p)
+
+    forecast: list[dict] = [{"day": 0, "balance": round(balance_start, 2), "event": None}]
+    running = balance_start
+    critical_day: int | None = None
+
+    for day in range(1, days + 1):
+        running -= daily_burn
+        event = None
+        for p in payments_by_day.get(day, []):
+            running -= p["amount"]
+            event = p.get("name") or "платёж"
+        forecast.append({"day": day, "balance": round(running, 2), "event": event})
+        if running < 0 and critical_day is None:
+            critical_day = day
+
+    risk_events = [e for e in forecast if e["event"] is not None]
+
+    return {
+        **base,
+        "daily_burn":  round(daily_burn, 2),
+        "forecast":    forecast,
+        "risk_events": risk_events,
+        "critical_day": critical_day,
+    }
+
+
+def _find_danger_day(
+    balance: float, daily: float, days: int, valid_payments: list[dict]
+) -> int | None:
+    payments = sorted(valid_payments, key=lambda p: p["days_from_now"])
+    running = balance
+    prev_day = 0
+
+    for p in payments:
+        pay_day = int(p["days_from_now"])
+        span = pay_day - prev_day
+        if daily > 0 and running < daily * span:
+            return prev_day + int(running / daily)
+        running -= daily * span
+        running -= p["amount"]
+        if running < 0:
+            return pay_day
+        prev_day = pay_day
+
+    remaining_days = days - prev_day
+    if daily > 0 and running < daily * remaining_days:
+        return prev_day + int(running / daily)
+
+    return None
