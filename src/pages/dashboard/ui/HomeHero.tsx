@@ -22,6 +22,7 @@ export const HomeHero = ({ onConnectBank, onAddTransaction }: HomeHeroProps) => 
       <motion.div
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
+        data-tutorial-target="dashboard-hero"
         className="rounded-3xl p-5 bg-gradient-primary text-white shadow-primary relative overflow-hidden"
       >
         <div className="absolute -top-10 -right-8 w-40 h-40 rounded-full bg-white/15 blur-2xl pointer-events-none" />

@@ -466,7 +466,7 @@ export const DashboardPage = () => {
           )}
 
           {/* ── Блок 3: Расходы за месяц ── */}
-          <motion.div variants={item} className="px-5 mb-4 mt-4">
+          <motion.div variants={item} className="px-5 mb-4 mt-4" data-tutorial-target="dashboard-categories">
             <Card variant="default" padding="lg">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-bold text-text-primary">Расходы за месяц</h2>

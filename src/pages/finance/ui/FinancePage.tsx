@@ -111,7 +111,7 @@ export const FinancePage = () => {
       variants={container} initial="hidden" animate="show">
 
       {/* ── Header: balance + safe to spend ── */}
-      <motion.div variants={item} className="px-5 pt-12 pb-4">
+      <motion.div variants={item} className="px-5 pt-12 pb-4" data-tutorial-target="finance-balance">
         <h1 className="text-xl font-bold text-text-primary mb-3">Финансы</h1>
         {!bankConnected && (
           <button
@@ -427,7 +427,7 @@ export const FinancePage = () => {
       {/* ── FAB ── */}
       <div className="fixed inset-x-0 bottom-24 z-40 pointer-events-none">
         <div className="max-w-mobile mx-auto px-5 flex justify-end">
-          <button
+          <button data-tutorial-target="add-tx-fab"
             onClick={() => (bankConnected ? setAddOpen(true) : setBankOpen(true))}
             className="pointer-events-auto w-14 h-14 rounded-full bg-gradient-primary text-white shadow-primary flex items-center justify-center active:scale-90 transition-transform"
           >

@@ -89,6 +89,14 @@ export const SHOP_TABS: { key: ShopTab; label: string }[] = [
 
 export type AccessorySlot = 'head' | 'face' | 'neck' | 'paw' | 'feet';
 
+export const SLOT_META: Record<AccessorySlot, { label: string; emoji: string }> = {
+  head:  { label: 'Голова',  emoji: '🎩' },
+  face:  { label: 'Лицо',   emoji: '🕶️' },
+  neck:  { label: 'Шея',    emoji: '🎀' },
+  paw:   { label: 'Лапа',   emoji: '🪄' },
+  feet:  { label: 'Ноги',   emoji: '🛹' },
+};
+
 export interface ShopItem {
   id: string;
   tab: ShopTab;
@@ -104,43 +112,45 @@ export interface ShopItem {
 }
 
 export const SHOP_ITEMS: ShopItem[] = [
-  // ── Для КопиКота (60–200) — аксессуары, можно примерить ──
-  {
-    id: 'c_crown', tab: 'cat', name: 'Золотая корона', price: 200, emoji: '👑', slot: 'head',
-    desc: 'Монарх виртуальной казны',
-    image: 'https://images.unsplash.com/photo-1584302179602-e4c3d3fd629d?w=400&h=400&fit=crop&q=80',
-    imageBg: '#FFF3CD',
-  },
-  {
-    id: 'c_hat', tab: 'cat', name: 'Цилиндр', price: 140, emoji: '🎩', slot: 'head',
-    desc: 'Джентльмен от мира финансов',
-    image: 'https://images.unsplash.com/photo-1514327605112-b887c0e61c0a?w=400&h=400&fit=crop&q=80',
-    imageBg: '#1A1A2E',
-  },
-  {
-    id: 'c_glasses', tab: 'cat', name: 'Солнечные очки', price: 120, emoji: '🕶️', slot: 'face',
-    desc: 'Будущее ослепительно ярко',
-    image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=400&h=400&fit=crop&q=80',
-    imageBg: '#E3F2FD',
-  },
-  {
-    id: 'c_bowtie', tab: 'cat', name: 'Галстук-бабочка', price: 80, emoji: '🎀', slot: 'neck',
-    desc: 'Для важных финансовых переговоров',
-    image: 'https://images.unsplash.com/photo-1589756882348-3b70f4cde7a2?w=400&h=400&fit=crop&q=80',
-    imageBg: '#FCE4EC',
-  },
-  {
-    id: 'c_skate', tab: 'cat', name: 'Скейтборд', price: 160, emoji: '🛹', slot: 'feet',
-    desc: 'Катится к финансовой свободе',
-    image: 'https://images.unsplash.com/photo-1547047562-90c5f3e16e1b?w=400&h=400&fit=crop&q=80',
-    imageBg: '#F3E5F5',
-  },
-  {
-    id: 'c_wand', tab: 'cat', name: 'Магический жезл', price: 60, emoji: '🪄', slot: 'paw',
-    desc: 'Немного финансовой магии каждый день',
-    image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&h=400&fit=crop&q=80',
-    imageBg: '#EDE7F6',
-  },
+  // ── Голова ──
+  { id: 'c_crown',   tab: 'cat', name: 'Золотая корона',   price: 200, emoji: '👑', slot: 'head',
+    desc: 'Монарх виртуальной казны',               image: 'https://images.unsplash.com/photo-1584302179602-e4c3d3fd629d?w=300&fit=crop', imageBg: '#FFF3CD' },
+  { id: 'c_hat',     tab: 'cat', name: 'Цилиндр',           price: 140, emoji: '🎩', slot: 'head',
+    desc: 'Джентльмен от мира финансов',            image: 'https://images.unsplash.com/photo-1514327605112-b887c0e61c0a?w=300&fit=crop', imageBg: '#1A1A2E' },
+  { id: 'c_cap',     tab: 'cat', name: 'Кепка-бейсболка',  price: 80,  emoji: '🧢', slot: 'head',
+    desc: 'Casual-финансист на выходных',           image: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=300&fit=crop', imageBg: '#E3F2FD' },
+  { id: 'c_witch',   tab: 'cat', name: 'Шляпа ведьмы',     price: 120, emoji: '🪄', slot: 'head',
+    desc: 'Варит зелье финансового успеха',         image: 'https://images.unsplash.com/photo-1590012944426-a0b3c06fac97?w=300&fit=crop', imageBg: '#2D1B4E' },
+  { id: 'c_halo',    tab: 'cat', name: 'Нимб инвестора',   price: 250, emoji: '✨', slot: 'head',
+    desc: 'Для тех, кто всегда в плюсе',            image: 'https://images.unsplash.com/photo-1617817508016-7fb6cb73a7e7?w=300&fit=crop', imageBg: '#FFFDE7' },
+  // ── Лицо ──
+  { id: 'c_glasses', tab: 'cat', name: 'Солнечные очки',   price: 120, emoji: '🕶️', slot: 'face',
+    desc: 'Будущее ослепительно ярко',              image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=300&fit=crop', imageBg: '#E3F2FD' },
+  { id: 'c_monocle', tab: 'cat', name: 'Монокль',          price: 90,  emoji: '🧐', slot: 'face',
+    desc: 'Смотрит на бюджет пристально',           image: 'https://images.unsplash.com/photo-1574169208507-843761e5c2e7?w=300&fit=crop', imageBg: '#F3E5F5' },
+  { id: 'c_mask',    tab: 'cat', name: 'Маска супергероя', price: 150, emoji: '🦸', slot: 'face',
+    desc: 'Защищает финансы от хаоса',              image: 'https://images.unsplash.com/photo-1635805737707-575885ab0820?w=300&fit=crop', imageBg: '#FCE4EC' },
+  // ── Шея ──
+  { id: 'c_bowtie',  tab: 'cat', name: 'Галстук-бабочка',  price: 80,  emoji: '🎀', slot: 'neck',
+    desc: 'Для важных переговоров',                 image: 'https://images.unsplash.com/photo-1589756882348-3b70f4cde7a2?w=300&fit=crop', imageBg: '#FCE4EC' },
+  { id: 'c_tie',     tab: 'cat', name: 'Деловой галстук',  price: 100, emoji: '👔', slot: 'neck',
+    desc: 'Строгий финансист в деле',               image: 'https://images.unsplash.com/photo-1598554747436-c9293d6a588f?w=300&fit=crop', imageBg: '#E8F5E9' },
+  { id: 'c_chain',   tab: 'cat', name: 'Золотая цепь',     price: 180, emoji: '⛓️', slot: 'neck',
+    desc: 'Богатства не скрыть',                    image: 'https://images.unsplash.com/photo-1612730808010-3a1d89b1cce3?w=300&fit=crop', imageBg: '#FFF9C4' },
+  // ── Лапа ──
+  { id: 'c_wand',    tab: 'cat', name: 'Магический жезл',  price: 60,  emoji: '🪄', slot: 'paw',
+    desc: 'Немного финансовой магии',               image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=300&fit=crop', imageBg: '#EDE7F6' },
+  { id: 'c_coin',    tab: 'cat', name: 'Монетка-талисман', price: 70,  emoji: '🪙', slot: 'paw',
+    desc: 'Всегда при деньгах',                     image: 'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=300&fit=crop', imageBg: '#FFF8E1' },
+  { id: 'c_phone',   tab: 'cat', name: 'Смартфон инвестора', price: 130, emoji: '📱', slot: 'paw',
+    desc: 'Трейдинг прямо из лапы',                 image: 'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=300&fit=crop', imageBg: '#E8EAF6' },
+  // ── Ноги ──
+  { id: 'c_skate',   tab: 'cat', name: 'Скейтборд',        price: 160, emoji: '🛹', slot: 'feet',
+    desc: 'Катится к финансовой свободе',           image: 'https://images.unsplash.com/photo-1547047562-90c5f3e16e1b?w=300&fit=crop', imageBg: '#F3E5F5' },
+  { id: 'c_rocket',  tab: 'cat', name: 'Ракетные ботинки', price: 220, emoji: '🚀', slot: 'feet',
+    desc: 'Портфель растёт быстрее света',          image: 'https://images.unsplash.com/photo-1516849841032-87cbac4d88f7?w=300&fit=crop', imageBg: '#E3F2FD' },
+  { id: 'c_sneakers',tab: 'cat', name: 'Кроссовки',        price: 90,  emoji: '👟', slot: 'feet',
+    desc: 'Всегда в движении к цели',               image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&fit=crop', imageBg: '#FFF3E0' },
 
   // ── Для приложения (50–500) — визуальные апгрейды ──
   {

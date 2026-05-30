@@ -68,12 +68,12 @@ export const ArenaPage = () => {
         </div>
 
         {/* Кот по центру */}
-        <div className="flex items-center justify-center z-10">
+        <div data-tutorial-target="arena-cat" className="flex items-center justify-center z-10">
           <CopyCat size={220} festive={festive} onWakeUp={handleWakeUp} />
         </div>
 
         {/* ── Трекер серии ── */}
-        <div className="z-10">
+        <div data-tutorial-target="arena-streak" className="z-10">
           <StreakTracker />
         </div>
 

@@ -90,3 +90,72 @@ export const generateTransactions = (days = 365): Transaction[] => {
 };
 
 export const MOCK_TRANSACTIONS = generateTransactions(365);
+
+// ── Профиль 2: «Накопитель» — высокий доход, умеренные траты, активное сбережение
+const SAVER_EXPENSE_TEMPLATES: ExpenseTemplate[] = [
+  { category: 'food',          titles: ['Магнит', 'ВкусВилл', 'Столовая', 'Перекрёсток', 'Домашняя еда'], min: 150, max: 1200, perWeek: 5 },
+  { category: 'transport',     titles: ['Метро', 'Автобус', 'Самокат GO', 'Ситимобил'], min: 50, max: 600, perWeek: 6 },
+  { category: 'shopping',      titles: ['Wildberries', 'Fix Price', 'Леруа Мерлен', 'Decathlon'], min: 500, max: 4000, perWeek: 0.8 },
+  { category: 'entertainment', titles: ['Кинотеатр', 'Книжный', 'Музей', 'Парк'], min: 300, max: 1500, perWeek: 0.5 },
+  { category: 'health',        titles: ['Аптека', 'Фитнес Клуб', 'Анализы', 'Бассейн'], min: 300, max: 2500, perWeek: 1.2 },
+  { category: 'education',     titles: ['Coursera', 'Skillbox', 'Книги', 'Курс английского'], min: 500, max: 3000, perWeek: 0.4 },
+  { category: 'housing',       titles: ['Аренда', 'ЖКХ', 'Интернет', 'Телефон'], min: 1000, max: 22000, perWeek: 0.3 },
+];
+
+const SAVER_SUBSCRIPTIONS = [
+  { title: 'Яндекс Плюс', amount: 399, day: 10 },
+  { title: 'Антивирус', amount: 199, day: 5 },
+];
+
+/** Генерирует транзакции профиля «Накопитель» — высокий доход, умеренные траты */
+export const generateSaverTransactions = (days = 90): Transaction[] => {
+  const rnd = mulberry32(20261001);
+  const txs: Transaction[] = [];
+  const today = new Date();
+  today.setHours(20, 0, 0, 0);
+  let id = 0;
+  const nid = () => `tx_saver_${++id}`;
+
+  for (let back = days; back >= 0; back--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - back);
+    const dow = (d.getDay() + 6) % 7;
+
+    // Высокий доход: зарплата 5-го и 20-го (выше, т.к. IT-специалист)
+    if (d.getDate() === 5) {
+      txs.push({ id: nid(), type: 'income', amount: 140_000, category: 'salary', title: 'Зарплата', date: iso(d), method: 'card' });
+    }
+    if (d.getDate() === 20) {
+      txs.push({ id: nid(), type: 'income', amount: 60_000, category: 'salary', title: 'Аванс', date: iso(d), method: 'card' });
+    }
+    // Фриланс проекты ~раз в 2 недели
+    if (rnd() < 0.08) {
+      txs.push({ id: nid(), type: 'income', amount: 15_000 + Math.round(rnd() * 35_000), category: 'freelance', title: 'Фриланс-проект', date: iso(d), method: 'card' });
+    }
+    // Инвестиционные доходы ~раз в месяц
+    if (rnd() < 0.03) {
+      txs.push({ id: nid(), type: 'income', amount: 3_000 + Math.round(rnd() * 12_000), category: 'cashback', title: 'Дивиденды / Кэшбэк', date: iso(d), method: 'card' });
+    }
+
+    // Подписки
+    for (const s of SAVER_SUBSCRIPTIONS) {
+      if (d.getDate() === s.day) {
+        txs.push({ id: nid(), type: 'expense', amount: s.amount, category: 'subscriptions', title: s.title, merchant: s.title, date: iso(d), method: 'card' });
+      }
+    }
+
+    // Расходы — умеренные
+    for (const t of SAVER_EXPENSE_TEMPLATES) {
+      const bias = t.weekdayBias?.[dow] ?? 1;
+      const prob = (t.perWeek / 7) * bias;
+      if (rnd() < prob) {
+        const base   = t.min + rnd() * (t.max - t.min);
+        const amount = Math.round((base * 0.75) / 10) * 10; // умеренные траты
+        const title  = t.titles[Math.floor(rnd() * t.titles.length)];
+        txs.push({ id: nid(), type: 'expense', amount, category: t.category, title, merchant: title, date: iso(d), method: 'card' });
+      }
+    }
+  }
+
+  return txs.sort((a, b) => +new Date(b.date) - +new Date(a.date));
+};

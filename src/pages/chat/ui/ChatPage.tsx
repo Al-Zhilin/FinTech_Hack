@@ -6,7 +6,7 @@ import { useChatStore } from '@/entities/chat/model/chatStore';
 import { sendChatMessage } from '@/shared/api/chat';
 import { cn } from '@/shared/lib/cn';
 import { CalculatorResultCard } from '@/widgets/chat/CalculatorResultCard';
-import { ChatTable } from '@/widgets/chat/ChatTable';
+import { ChatTable, MarkdownTable } from '@/widgets/chat/ChatTable';
 import type { ChatMessage } from '@/shared/types';
 
 // ─── Quick prompts ─────────────────────────────────────────────────────────────
@@ -43,21 +43,29 @@ const TypingIndicator = () => (
 // ─── Markdown prose styles ─────────────────────────────────────────────────────
 
 const mdComponents: React.ComponentProps<typeof ReactMarkdown>['components'] = {
-  p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
-  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-  em: ({ children }) => <em className="italic">{children}</em>,
-  ul: ({ children }) => <ul className="list-disc pl-4 mb-1.5 flex flex-col gap-0.5">{children}</ul>,
-  ol: ({ children }) => <ol className="list-decimal pl-4 mb-1.5 flex flex-col gap-0.5">{children}</ol>,
-  li: ({ children }) => <li className="leading-snug">{children}</li>,
-  h1: ({ children }) => <h1 className="font-bold text-base mb-1">{children}</h1>,
-  h2: ({ children }) => <h2 className="font-bold text-sm mb-1">{children}</h2>,
-  h3: ({ children }) => <h3 className="font-semibold text-sm mb-0.5">{children}</h3>,
-  code: ({ children }) => (
-    <code className="bg-black/10 rounded px-1 py-0.5 text-xs font-mono">{children}</code>
+  p:          ({ children }) => <p className="mb-1.5 last:mb-0 leading-relaxed">{children}</p>,
+  strong:     ({ children }) => <strong className="font-bold">{children}</strong>,
+  em:         ({ children }) => <em className="italic opacity-90">{children}</em>,
+  ul:         ({ children }) => <ul className="list-disc pl-4 mb-1.5 flex flex-col gap-0.5">{children}</ul>,
+  ol:         ({ children }) => <ol className="list-decimal pl-4 mb-1.5 flex flex-col gap-0.5">{children}</ol>,
+  li:         ({ children }) => <li className="leading-snug">{children}</li>,
+  h1:         ({ children }) => <h1 className="font-extrabold text-base mb-2 mt-1 border-b border-current/10 pb-1">{children}</h1>,
+  h2:         ({ children }) => <h2 className="font-bold text-sm mb-1.5 mt-1">{children}</h2>,
+  h3:         ({ children }) => <h3 className="font-semibold text-sm mb-1 mt-0.5 text-primary/90">{children}</h3>,
+  code:       ({ children }) => (
+    <code className="bg-black/10 rounded-md px-1.5 py-0.5 text-xs font-mono tracking-tight">{children}</code>
   ),
   blockquote: ({ children }) => (
-    <blockquote className="border-l-2 border-current/30 pl-3 opacity-80 my-1">{children}</blockquote>
+    <blockquote className="border-l-3 border-primary/40 pl-3 opacity-85 my-1.5 italic">{children}</blockquote>
   ),
+  hr: () => <hr className="border-current/15 my-2" />,
+  // ── Таблицы: красиво оформляем прямо внутри пузыря ──────────────────────────
+  table: ({ children }) => <MarkdownTable>{children}</MarkdownTable>,
+  thead: ({ children }) => <thead>{children}</thead>,
+  tbody: ({ children }) => <tbody>{children}</tbody>,
+  tr:    ({ children }) => <tr>{children}</tr>,
+  th:    ({ children }) => <th>{children}</th>,
+  td:    ({ children }) => <td>{children}</td>,
 };
 
 // ─── Message bubble ────────────────────────────────────────────────────────────
@@ -83,10 +91,11 @@ const MessageBubble = ({ msg }: { msg: ChatMessage }) => {
           </div>
         )}
         <div className={cn(
-          'max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
+          'rounded-2xl px-4 py-3 text-sm leading-relaxed',
           isUser
-            ? 'bg-gradient-primary text-white rounded-br-sm'
-            : 'bg-white shadow-card text-text-primary rounded-bl-sm'
+            ? 'max-w-[78%] bg-gradient-primary text-white rounded-br-sm'
+            // AI-пузырь: без max-w чтобы таблицы не обрезались, но ограничен родителем
+            : 'w-full max-w-[calc(100%-40px)] bg-white shadow-card text-text-primary rounded-bl-sm overflow-hidden'
         )}>
           {isUser ? (
             <p className="whitespace-pre-line">{msg.content}</p>
@@ -203,7 +212,7 @@ export const ChatPage = () => {
   return (
     <div className="flex flex-col min-h-dvh bg-bg-base">
       {/* ── Header ── */}
-      <div className="glass border-b border-border sticky top-0 z-20 px-5 pt-12 pb-4">
+      <div data-tutorial-target="chat-header" className="glass border-b border-border sticky top-0 z-20 px-5 pt-12 pb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center shadow-primary">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -278,7 +287,7 @@ export const ChatPage = () => {
       )}
 
       {/* ── Input ── */}
-      <div className="glass border-t border-border px-4 py-3 pb-safe-bottom"
+      <div data-tutorial-target="chat-input" className="glass border-t border-border px-4 py-3 pb-safe-bottom"
            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}>
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
           <input

@@ -167,6 +167,7 @@ export const PersonalCoach = () => {
           {!open && (
             <motion.button
               key="fab"
+              data-tutorial-target="coach-fab"
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
