@@ -8,6 +8,7 @@ const RU: Dict = {
   'nav.finance': 'Финансы',
   'nav.ai': 'Чат',
   'nav.goals': 'Цели',
+  'nav.arena': 'Арена',
   'nav.profile': 'Профиль',
   // profile sections
   'profile.dna': 'Финансовый ДНК-тип',
@@ -45,6 +46,7 @@ const EN: Dict = {
   'nav.finance': 'Finance',
   'nav.ai': 'AI',
   'nav.goals': 'Goals',
+  'nav.arena': 'Arena',
   'nav.profile': 'Profile',
   'profile.dna': 'Financial DNA type',
   'profile.level': 'Level',

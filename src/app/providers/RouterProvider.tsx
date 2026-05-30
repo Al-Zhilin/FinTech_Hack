@@ -5,7 +5,7 @@ import { OnboardingPage } from '@/pages/onboarding';
 import { DashboardPage } from '@/pages/dashboard';
 import { ChatPage } from '@/pages/chat';
 import { ProfilePage } from '@/pages/profile';
-import { GoalsPage } from '@/pages/goals';
+import { ArenaPage } from '@/pages/arena';
 import { AnalyticsPage } from '@/pages/analytics';
 import { FinancePage } from '@/pages/finance';
 
@@ -44,7 +44,7 @@ const router = createBrowserRouter([
       { path: 'finance',   element: <FinancePage /> },
       { path: 'chat',      element: <ChatPage /> },
       { path: 'profile',   element: <ProfilePage /> },
-      { path: 'goals',     element: <GoalsPage /> },
+      { path: 'arena',     element: <ArenaPage /> },
       { path: 'analytics', element: <AnalyticsPage /> },
     ],
   },

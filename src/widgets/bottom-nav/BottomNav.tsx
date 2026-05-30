@@ -6,7 +6,7 @@ const NAV_ITEMS = [
   { to: '/dashboard', icon: HomeIcon,      tkey: 'nav.home',    highlight: false },
   { to: '/finance',   icon: WalletIcon,    tkey: 'nav.finance', highlight: false },
   { to: '/chat',      icon: AiIcon,        tkey: 'nav.ai',      highlight: true },
-  { to: '/goals',     icon: GoalsIcon,     tkey: 'nav.goals',   highlight: false },
+  { to: '/arena',     icon: ArenaIcon,     tkey: 'nav.arena',   highlight: false },
   { to: '/profile',   icon: ProfileIcon,   tkey: 'nav.profile', highlight: false },
 ] as const;
 
@@ -86,12 +86,15 @@ function AiIcon({ size = 24, className = '' }) {
   );
 }
 
-function GoalsIcon({ size = 24, className = '' }) {
+function ArenaIcon({ size = 24, className = '' }) {
+  // Кошачья лапка — символ Арены и КопиКота
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8"/>
-      <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="1.8"/>
-      <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+      <ellipse cx="12" cy="15.5" rx="4.5" ry="3.8" fill="currentColor"/>
+      <ellipse cx="6.5" cy="10" rx="1.8" ry="2.4" fill="currentColor"/>
+      <ellipse cx="17.5" cy="10" rx="1.8" ry="2.4" fill="currentColor"/>
+      <ellipse cx="9.5" cy="6.5" rx="1.7" ry="2.2" fill="currentColor"/>
+      <ellipse cx="14.5" cy="6.5" rx="1.7" ry="2.2" fill="currentColor"/>
     </svg>
   );
 }
