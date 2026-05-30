@@ -442,7 +442,7 @@ export const DashboardPage = () => {
           </motion.div>
 
           {/* ── Expenses breakdown ── */}
-          <motion.div variants={item} className="px-5 mb-4">
+          <motion.div variants={item} className="px-5 mb-4 mt-4">
             <Card variant="default" padding="lg">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-bold text-text-primary">Расходы за месяц</h2>
@@ -499,33 +499,33 @@ export const DashboardPage = () => {
 
           {/* ── Upcoming payments (только если есть) ── */}
           {profile.upcomingPayments.length > 0 && (
-          <motion.div variants={item} className="px-5 mb-6">
-            <Card variant="default" padding="lg">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-bold text-text-primary">Ближайшие платежи</h2>
-                <Badge variant="danger">×{profile.upcomingPayments.length}</Badge>
-              </div>
-              <div className="flex flex-col divide-y divide-border-light">
-                {profile.upcomingPayments.map(p => {
-                  const date = new Date(p.nextDate);
-                  const daysLeft = Math.ceil((date.getTime() - Date.now()) / 86_400_000);
-                  return (
-                    <div key={p.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                        style={{ backgroundColor: p.color + '20' }}>
-                        {p.icon}
+            <motion.div variants={item} className="px-5 mb-6">
+              <Card variant="default" padding="lg">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-base font-bold text-text-primary">Ближайшие платежи</h2>
+                  <Badge variant="danger">×{profile.upcomingPayments.length}</Badge>
+                </div>
+                <div className="flex flex-col divide-y divide-border-light">
+                  {profile.upcomingPayments.map(p => {
+                    const date = new Date(p.nextDate);
+                    const daysLeft = Math.ceil((date.getTime() - Date.now()) / 86_400_000);
+                    return (
+                      <div key={p.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                          style={{ backgroundColor: p.color + '20' }}>
+                          {p.icon}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm text-text-primary">{p.title}</p>
+                          <p className="text-xs text-text-tertiary">через {daysLeft} дн.</p>
+                        </div>
+                        <span className="font-bold text-sm text-text-primary">−{formatCurrency(p.amount)}</span>
                       </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm text-text-primary">{p.title}</p>
-                        <p className="text-xs text-text-tertiary">через {daysLeft} дн.</p>
-                      </div>
-                      <span className="font-bold text-sm text-text-primary">−{formatCurrency(p.amount)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          </motion.div>
+                    );
+                  })}
+                </div>
+              </Card>
+            </motion.div>
           )}
 
         </>)}

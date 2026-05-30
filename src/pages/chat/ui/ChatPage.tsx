@@ -6,6 +6,7 @@ import { useChatStore } from '@/entities/chat/model/chatStore';
 import { sendChatMessage } from '@/shared/api/chat';
 import { cn } from '@/shared/lib/cn';
 import { CalculatorResultCard } from '@/widgets/chat/CalculatorResultCard';
+import { ChatTable } from '@/widgets/chat/ChatTable';
 import type { ChatMessage } from '@/shared/types';
 
 // ─── Quick prompts ─────────────────────────────────────────────────────────────
@@ -97,6 +98,8 @@ const MessageBubble = ({ msg }: { msg: ChatMessage }) => {
         </div>
       </motion.div>
 
+      {msg.table && <ChatTable html={msg.table} />}
+
       {hasCalcResult && (
         <CalculatorResultCard result={msg.calculator_result!} />
       )}
@@ -151,11 +154,14 @@ export const ChatPage = () => {
 
     let content: string;
     let calcResult = undefined;
+    let tableHtml: string | undefined = undefined;
     try {
       const result = await sendChatMessage(login, payload, (raw) =>
         setStatus(STATUS_LABELS[raw] ?? raw),
       );
       content = result.text || 'Не удалось получить ответ. Попробуйте переформулировать вопрос.';
+      // table: верхний уровень имеет приоритет, потом structured.table
+      tableHtml = result.table ?? result.structured?.table ?? undefined;
       const cr = result.structured?.calculator_result;
       if (cr && Object.keys(cr).length > 0) calcResult = cr;
     } catch {
@@ -170,6 +176,7 @@ export const ChatPage = () => {
       content,
       timestamp: new Date().toISOString(),
       calculator_result: calcResult,
+      table: tableHtml,
     }]);
   };
 

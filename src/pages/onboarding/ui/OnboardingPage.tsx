@@ -9,7 +9,7 @@ import type { User } from '@/shared/types';
 import { Preloader } from './Preloader';
 import { Features } from './Features';
 import { AuthPhase } from './AuthPhase';
-import { AIOnboarding } from './AIOnboarding';
+import { AIOnboarding, type ExtractedFinancials } from './AIOnboarding';
 import { OnboardingPlan } from './OnboardingPlan';
 
 type Phase = 'preloader' | 'features' | 'auth' | 'ai-onboarding' | 'plan';
@@ -22,10 +22,12 @@ export const OnboardingPage = () => {
   const [phase, setPhase] = useState<Phase>('preloader');
   const account = useRef<{ email: string; name: string }>({ email: '', name: '' });
   const profileSummaryRef = useRef('');
+  const financialsRef = useRef<ExtractedFinancials>({ income: 0, hasCredits: false, creditAmount: 0, hasCushion: false });
 
   // Вызывается когда AI-квиз завершён и получен summary — показываем план
-  const onQuizComplete = (summary: string) => {
+  const onQuizComplete = (summary: string, financials: ExtractedFinancials) => {
     profileSummaryRef.current = summary;
+    financialsRef.current = financials;
     setPhase('plan');
   };
 
@@ -34,15 +36,18 @@ export const OnboardingPage = () => {
     const email = account.current.email;
     const name = account.current.name;
 
+    const fin = financialsRef.current;
     const user: User = {
       id: genId(),
       name,
       email,
-      income: 0,
+      income: fin.income || 0,
       goal: 'other',
       goalLabel: 'Профиль создан',
       monthlyExpenses: 0,
-      hasCredits: false,
+      hasCredits: fin.hasCredits,
+      creditAmount: fin.creditAmount || undefined,
+      hasCushion: fin.hasCushion,
       createdAt: new Date().toISOString(),
       profileSummary: profileSummaryRef.current || undefined,
     };

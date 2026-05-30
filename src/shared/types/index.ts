@@ -20,6 +20,7 @@ export interface User {
   monthlyExpenses: number;
   hasCredits: boolean;
   creditAmount?: number;
+  hasCushion?: boolean;
   createdAt: string;
   // Onboarding quiz + derived analysis
   quiz?: QuizAnswers;
@@ -236,4 +237,5 @@ export interface ChatMessage {
   timestamp: string;
   isTyping?: boolean;
   calculator_result?: CalculatorResult;
+  table?: string;   // HTML-строка таблицы для рендера
 }

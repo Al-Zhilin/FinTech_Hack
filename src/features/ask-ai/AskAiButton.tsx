@@ -24,7 +24,7 @@ export const AskAiButton = ({
   if (variant === 'solid') {
     return (
       <button
-        onClick={() => ask(question)}
+        onClick={() => ask(question, { display: text })}
         className={cn(
           'w-full h-12 rounded-2xl bg-gradient-primary text-white font-semibold text-[15px]',
           'flex items-center justify-center gap-2 shadow-primary active:scale-[0.97] transition-transform',
@@ -41,7 +41,7 @@ export const AskAiButton = ({
   // chip
   return (
     <button
-      onClick={() => ask(question)}
+      onClick={() => ask(question, { display: text })}
       className={cn(
         'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full',
         'bg-primary-light text-primary font-semibold text-sm',

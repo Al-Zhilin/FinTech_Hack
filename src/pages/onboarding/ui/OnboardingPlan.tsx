@@ -28,15 +28,8 @@ export const OnboardingPlan = ({ name, summary, onEnter }: OnboardingPlanProps) 
   const items = parsePlanItems(summary);
 
   return (
-    <div className="flex flex-col min-h-dvh bg-gradient-to-b from-[#1C1C2E] to-[#0F0E17] text-white overflow-y-auto">
-      {/* Декор */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full bg-primary/20 blur-3xl" />
-        <div className="absolute top-40 -right-20 w-56 h-56 rounded-full bg-purple/15 blur-3xl" />
-        <div className="absolute bottom-20 -left-10 w-48 h-48 rounded-full bg-primary/10 blur-3xl" />
-      </div>
-
-      <div className="relative flex flex-col px-6 pt-16 pb-10 flex-1">
+    <div className="w-full max-w-mobile mx-auto flex flex-col min-h-dvh bg-bg-base overflow-y-auto">
+      <div className="flex flex-col px-6 pt-14 pb-10 flex-1">
         {/* Иконка + заголовок */}
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
@@ -62,7 +55,7 @@ export const OnboardingPlan = ({ name, summary, onEnter }: OnboardingPlanProps) 
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-3xl font-bold text-center leading-tight mb-2"
+            className="text-3xl font-bold text-text-primary text-center leading-tight mb-2"
           >
             {firstName}, план готов!
           </motion.h1>
@@ -70,7 +63,7 @@ export const OnboardingPlan = ({ name, summary, onEnter }: OnboardingPlanProps) 
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="text-white/60 text-center text-[15px] leading-snug"
+            className="text-text-secondary text-center text-[15px] leading-snug"
           >
             AI проанализировал ваши ответы и составил персональный план улучшения финансового состояния
           </motion.p>
@@ -92,12 +85,12 @@ export const OnboardingPlan = ({ name, summary, onEnter }: OnboardingPlanProps) 
                   initial={{ opacity: 0, x: -16 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.45 + i * 0.07 }}
-                  className="flex items-start gap-3 bg-white/8 backdrop-blur-sm rounded-2xl px-4 py-3.5"
+                  className="flex items-start gap-3 bg-white rounded-2xl px-4 py-3.5 shadow-card"
                 >
-                  <span className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${PLAN_BG[i % PLAN_BG.length]} bg-opacity-20`}>
+                  <span className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${PLAN_BG[i % PLAN_BG.length]}`}>
                     <Icon size={16} className={PLAN_COLORS[i % PLAN_COLORS.length]} />
                   </span>
-                  <p className="text-sm text-white/85 leading-snug pt-0.5">{item}</p>
+                  <p className="text-sm text-text-secondary leading-snug pt-0.5">{item}</p>
                 </motion.div>
               );
             })}
@@ -121,12 +114,12 @@ export const OnboardingPlan = ({ name, summary, onEnter }: OnboardingPlanProps) 
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.45 + i * 0.07 }}
-                className="flex items-start gap-3 bg-white/8 backdrop-blur-sm rounded-2xl px-4 py-3.5"
+                className="flex items-start gap-3 bg-white rounded-2xl px-4 py-3.5 shadow-card"
               >
                 <span className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${bg}`}>
                   <Icon size={16} className={color} />
                 </span>
-                <p className="text-sm text-white/85 leading-snug pt-0.5">{text}</p>
+                <p className="text-sm text-text-secondary leading-snug pt-0.5">{text}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -137,11 +130,11 @@ export const OnboardingPlan = ({ name, summary, onEnter }: OnboardingPlanProps) 
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.85 }}
-          className="bg-white/6 rounded-2xl px-4 py-4 mb-8 border border-white/10"
+          className="bg-primary-light rounded-2xl px-4 py-4 mb-8 border border-primary/15"
         >
-          <p className="text-xs text-white/50 uppercase tracking-widest mb-1.5">На главной странице</p>
-          <p className="text-white/85 text-sm leading-snug">
-            Раздел <span className="font-semibold text-white">«Мой план»</span> — пошаговые рекомендации,
+          <p className="text-xs text-primary/60 uppercase tracking-widest mb-1.5 font-semibold">На главной странице</p>
+          <p className="text-text-secondary text-sm leading-snug">
+            Раздел <span className="font-semibold text-text-primary">«Мой план»</span> — пошаговые рекомендации,
             AI-инсайты и прогноз по улучшению финансового здоровья будут доступны всегда.
           </p>
         </motion.div>
@@ -154,11 +147,11 @@ export const OnboardingPlan = ({ name, summary, onEnter }: OnboardingPlanProps) 
           className="mt-auto"
         >
           <Button size="lg" fullWidth onClick={onEnter}
-            className="!bg-gradient-primary !shadow-primary h-14 text-base">
+            className="h-14 text-base">
             <span>Смотреть мой план</span>
             <ArrowRight size={20} className="ml-2" />
           </Button>
-          <p className="text-center text-white/30 text-xs mt-3">
+          <p className="text-center text-text-tertiary text-xs mt-3">
             Вы всегда можете обновить профиль в настройках
           </p>
         </motion.div>

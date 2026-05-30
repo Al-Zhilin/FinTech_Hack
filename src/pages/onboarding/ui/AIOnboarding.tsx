@@ -3,13 +3,70 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { onboardingStep, extractOptions, stripOptions } from '@/shared/api/onboarding';
 import { Button } from '@/shared/ui/Button';
 
+export interface ExtractedFinancials {
+  income: number;
+  hasCredits: boolean;
+  creditAmount: number;
+  hasCushion: boolean;
+}
+
 interface AIOnboardingProps {
   userLogin: string;
   onBack: () => void;
-  onComplete: (profileSummary: string) => void;
+  onComplete: (profileSummary: string, financials: ExtractedFinancials) => void;
 }
 
 const TOTAL_QUESTIONS = 9;
+
+function extractFinancials(history: QA[]): ExtractedFinancials {
+  let income = 0;
+  let hasCredits = false;
+  let creditAmount = 0;
+  let hasCushion = false;
+
+  for (const { question, answer } of history) {
+    const q = (question ?? '').toLowerCase();
+    const a = answer ?? '';
+    const aL = a.toLowerCase();
+
+    // Income: вопрос о доходе + числовой ответ
+    if (q.includes('доход') || q.includes('зарплат') || q.includes('зарабатыва') || q.includes('получа')) {
+      const n = parseInt(a.replace(/[^0-9]/g, ''));
+      if (n >= 5_000 && n <= 5_000_000) income = n;
+    }
+
+    // Кредиты: матчим по тексту кнопок и ключевым словам
+    if (a.includes('Да, один') || a.includes('Да, два') || a.includes('есть просрочки')) {
+      hasCredits = true;
+    }
+    if (/^нет$/i.test(a.trim()) && (q.includes('кредит') || q.includes('займ'))) {
+      hasCredits = false;
+    }
+    if (q.includes('кредит') || q.includes('займ')) {
+      if (!aL.startsWith('нет') && (aL.includes('да') || aL.includes('один') || aL.includes('два') || aL.includes('просрочк'))) {
+        hasCredits = true;
+      }
+      // попытка вытащить сумму платежа
+      const creditNum = parseInt(a.replace(/[^0-9]/g, ''));
+      if (creditNum >= 500 && creditNum < income) creditAmount = creditNum;
+    }
+
+    // Подушка безопасности
+    if (a.includes('3+ месячных') || a.includes('1–2 дохода') || a.includes('немного (1')) {
+      hasCushion = true;
+    }
+    if (a.includes('Вообще нет') || a.includes('Долги, а не')) {
+      hasCushion = false;
+    }
+    if (q.includes('подушк') || q.includes('накоплен') || q.includes('резерв')) {
+      if (!aL.includes('нет') && !aL.includes('долг') && (aL.includes('да') || aL.includes('есть') || aL.includes('+') || aL.includes('месяц'))) {
+        hasCushion = true;
+      }
+    }
+  }
+
+  return { income, hasCredits, creditAmount, hasCushion };
+}
 
 const STATUS_LABELS: Record<string, string> = {
   queued: 'В очереди…',
@@ -68,7 +125,8 @@ export const AIOnboarding = ({ userLogin, onBack, onComplete }: AIOnboardingProp
       if (result.complete) {
         setIsComplete(true);
         setSuggestedAnswers([]);
-        setSummary(result.profile_summary ?? 'Ваш финансовый профиль готов!');
+        const finalSummary = result.profile_summary ?? 'Ваш финансовый профиль готов!';
+        setSummary(finalSummary);
       } else if (result.question) {
         setQuestion(stripOptions(result.question) || result.question);
         setOptions(extractOptions(result));
@@ -88,9 +146,11 @@ export const AIOnboarding = ({ userLogin, onBack, onComplete }: AIOnboardingProp
   // Небольшая задержка перед переходом на plan-экран — даём пользователю увидеть анимацию
   useEffect(() => {
     if (!isComplete) return;
-    const id = setTimeout(() => onComplete(summary), 1400);
+    const id = setTimeout(() => {
+      onComplete(summary, extractFinancials(history));
+    }, 1400);
     return () => clearTimeout(id);
-  }, [isComplete, summary, onComplete]);
+  }, [isComplete, summary, history, onComplete]);
 
   const progress = isComplete ? 1 : Math.min((questionNum - 1) / TOTAL_QUESTIONS, 0.95);
 

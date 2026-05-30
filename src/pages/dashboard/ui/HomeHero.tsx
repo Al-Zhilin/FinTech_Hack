@@ -33,7 +33,8 @@ export const HomeHero = () => {
   const income = user?.income || profile.monthlyIncome;
   const expenses = user?.monthlyExpenses || profile.monthlySpent;
   const credit = user?.hasCredits ? (user.creditAmount ?? 0) : 0;
-  const freeCash = Math.max(0, income - expenses - credit);
+  // Свободные деньги = зарплата − обязательный платёж по кредиту
+  const freeCash = Math.max(0, income - credit);
   const health = user?.analysis?.healthScore ?? (100 - profile.stressScore);
   const state = STATE_CFG.find(s => health >= s.min)!;
 

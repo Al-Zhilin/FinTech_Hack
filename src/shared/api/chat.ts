@@ -5,8 +5,10 @@ const API_BASE = '/api/v1';
 
 export interface ChatResult {
   text: string;
+  table?: string;           // HTML-строка таблицы (опционально, на верхнем уровне)
   structured?: {
     calculator_result?: CalculatorResult;
+    table?: string;         // HTML-строка таблицы (опционально, внутри structured)
     [key: string]: unknown;
   };
   error?: string;

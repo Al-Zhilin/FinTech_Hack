@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Cell, PieChart, Pie } from 'recharts';
 import {
-  Plus, Search, CreditCard, Wallet,
+  Plus, Search,
   TrendingUp, TrendingDown, ChevronDown, X, ArrowUpRight, ArrowDownRight,
-  Calculator, ChevronRight,
+  Calculator, ChevronRight, ShieldCheck,
 } from 'lucide-react';
 import { useFinanceStore } from '@/entities/finance/model/financeStore';
 import { useUserTxStore } from '@/entities/finance/model/userTxStore';
+import { useUserStore } from '@/entities/user/model/userStore';
 import {
   periodRange, inRange, summarize, byCategory, buildSeries,
   weekdayInsight, spendingComment, type DateRange,
@@ -21,7 +22,7 @@ import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { formatCurrency, formatDate } from '@/shared/lib/formatters';
-import type { FinancePeriod, Transaction, TxType } from '@/shared/types';
+import type { FinancePeriod, TxType } from '@/shared/types';
 
 const item = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
@@ -38,6 +39,7 @@ const PERIODS: { id: FinancePeriod; label: string }[] = [
 export const FinancePage = () => {
   const profile = useFinanceStore(s => s.profile);
   const { txs: userTx, addTx } = useUserTxStore();
+  const user = useUserStore(s => s.user);
 
   const [period, setPeriod] = useState<FinancePeriod>('month');
   const [customFrom, setCustomFrom] = useState('');
@@ -94,18 +96,15 @@ export const FinancePage = () => {
       <motion.div variants={item} className="px-5 pt-12 pb-4">
         <p className="text-text-tertiary text-sm">Общий баланс</p>
         <h1 className="text-4xl font-bold text-text-primary mb-4">{formatCurrency(totalBalance)}</h1>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="bg-white rounded-xl p-3 shadow-card">
-            <TrendingUp size={16} className="text-success mb-1" />
-            <p className="text-[11px] text-text-tertiary">Доходы за период</p>
-            <p className="font-bold text-sm text-success">{formatCurrency(summary.income, true)}</p>
+        {user?.hasCushion ? (
+          <div className="flex items-center gap-3 bg-success-light rounded-2xl px-4 py-3">
+            <ShieldCheck size={22} className="text-success flex-shrink-0" />
+            <div>
+              <p className="text-[11px] text-text-tertiary font-medium">Финансовая подушка</p>
+              <p className="font-bold text-sm text-success">Есть накопления ✓</p>
+            </div>
           </div>
-          <div className="bg-white rounded-xl p-3 shadow-card">
-            <TrendingDown size={16} className="text-danger mb-1" />
-            <p className="text-[11px] text-text-tertiary">Расходы за период</p>
-            <p className="font-bold text-sm text-danger">{formatCurrency(summary.expense, true)}</p>
-          </div>
-        </div>
+        ) : null}
       </motion.div>
 
       {/* ── Period switcher ── */}

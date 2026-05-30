@@ -1,6 +1,6 @@
-// Общий клиент для SSE-over-POST (см. гайд бэкенда).
-// Надёжно: проверяет HTTP-статус, наличие тела, защищает JSON.parse,
-// поддерживает \n и \r\n. Не ставит таймаут — стрим живёт до event: result.
+// SSE-over-POST клиент.
+// Поддерживает: event+data фреймы, data без event (трактует как result),
+// сброс eventType по пустой строке (SSE-spec), \n и \r\n.
 
 export interface SseHandlers {
   onStatus?: (message: string) => void;
@@ -24,7 +24,6 @@ export async function streamSse(
     throw new Error('Не удалось подключиться к серверу');
   }
 
-  // По гайду статус всегда 200; всё иное (502/504/...) — ошибка шлюза/сервера.
   if (!response.ok) {
     throw new Error(`Сервер недоступен (${response.status}). Попробуйте ещё раз.`);
   }
@@ -36,15 +35,23 @@ export async function streamSse(
   const decoder = new TextDecoder();
   let buffer = '';
   let eventType = '';
+  let dataLines: string[] = [];
   let resolved = false;
 
-  const handleData = (raw: string) => {
+  const dispatch = () => {
+    if (dataLines.length === 0) return;
+    const raw = dataLines.join('\n');
+    dataLines = [];
+
     let data: Record<string, unknown>;
     try {
       data = JSON.parse(raw);
     } catch {
-      return; // частичный/невалидный кусок — пропускаем, не роняя поток
+      // не JSON — пропускаем, не роняя поток
+      eventType = '';
+      return;
     }
+
     if (eventType === 'status') {
       handlers.onStatus?.(String(data.message ?? ''));
     } else if (eventType === 'result') {
@@ -52,7 +59,16 @@ export async function streamSse(
       handlers.onResult(data);
     } else if (eventType === 'error') {
       throw new Error(String(data.error ?? 'Неизвестная ошибка'));
+    } else {
+      // data: без event: — если выглядит как финальный ответ (есть поле text), берём как result
+      if ('text' in data || 'structured' in data) {
+        resolved = true;
+        handlers.onResult(data);
+      }
+      // иначе просто игнорируем (промежуточный фрагмент)
     }
+
+    eventType = ''; // SSE-spec: сбрасываем тип после диспатча
   };
 
   while (true) {
@@ -72,15 +88,27 @@ export async function streamSse(
 
     for (const line of lines) {
       const l = line.trimEnd();
-      if (l.startsWith('event:')) {
+
+      if (l === '') {
+        // Пустая строка = конец SSE-фрейма → диспатчим
+        dispatch();
+        if (resolved) return;
+      } else if (l.startsWith('event:')) {
         eventType = l.slice(6).trim();
       } else if (l.startsWith('data:')) {
-        handleData(l.slice(5).trim());
-        if (resolved) return;
+        dataLines.push(l.slice(5).trimStart());
       }
-      // пустая строка — конец SSE-кадра, ничего не делаем
+      // id: и retry: игнорируем
     }
   }
 
-  if (!resolved) throw new Error('Соединение закрыто без ответа');
+  // Диспатчим остаток буфера (если сервер не прислал завершающую пустую строку)
+  if (buffer.trim()) {
+    dataLines.push(buffer.trim());
+  }
+  dispatch();
+  if (resolved) return;
+
+  // Последний шанс: весь ответ мог прийти как plain JSON (не SSE)
+  throw new Error('Соединение закрыто без ответа');
 }

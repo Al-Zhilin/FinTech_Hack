@@ -10,17 +10,18 @@ export const withFinancialContext = (question: string, p: FinancialProfile): str
   `баланс ${p.balance} ₽, норма сбережений ${p.savingsRate}%.]`;
 
 /**
- * Возвращает функцию ask(question): кладёт готовый промт (с данными пользователя)
- * и уводит в чат с AI. Используется кнопками-вопросами по всему приложению.
+ * Возвращает функцию ask(question, opts): кладёт готовый промт (с данными пользователя)
+ * и уводит в чат с AI. display — текст в пузыре пользователя (по умолчанию question).
+ * Используется кнопками-вопросами по всему приложению.
  */
 export const useAskAi = () => {
   const navigate = useNavigate();
   const setPending = useChatStore(s => s.setPending);
   const profile = useFinanceStore(s => s.profile);
 
-  return (question: string, options?: { beforeNavigate?: () => void }) => {
+  return (question: string, options?: { beforeNavigate?: () => void; display?: string }) => {
     setPending({
-      display: question,
+      display: options?.display ?? question,
       payload: withFinancialContext(question, profile),
     });
     options?.beforeNavigate?.();
