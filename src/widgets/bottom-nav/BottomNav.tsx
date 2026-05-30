@@ -1,19 +1,22 @@
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/shared/lib/cn';
+import { useT } from '@/shared/config/i18n';
 
 const NAV_ITEMS = [
-  { to: '/dashboard', icon: HomeIcon,      label: 'Главная' },
-  { to: '/finance',   icon: WalletIcon,    label: 'Финансы' },
-  { to: '/chat',      icon: AiIcon,        label: 'AI',        highlight: true },
-  { to: '/goals',     icon: GoalsIcon,     label: 'Цели' },
-  { to: '/profile',   icon: ProfileIcon,   label: 'Профиль' },
+  { to: '/dashboard', icon: HomeIcon,      tkey: 'nav.home' },
+  { to: '/finance',   icon: WalletIcon,    tkey: 'nav.finance' },
+  { to: '/chat',      icon: AiIcon,        tkey: 'nav.ai',     highlight: true },
+  { to: '/goals',     icon: GoalsIcon,     tkey: 'nav.goals' },
+  { to: '/profile',   icon: ProfileIcon,   tkey: 'nav.profile' },
 ] as const;
 
-export const BottomNav = () => (
+export const BottomNav = () => {
+  const t = useT();
+  return (
   <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile z-50 glass border-t border-border shadow-bottom-nav"
        style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}>
     <div className="flex items-center justify-around h-16 px-2">
-      {NAV_ITEMS.map(({ to, icon: Icon, label, highlight }) => (
+      {NAV_ITEMS.map(({ to, icon: Icon, tkey, highlight }) => (
         <NavLink
           key={to}
           to={to}
@@ -42,7 +45,7 @@ export const BottomNav = () => (
                 </span>
               )}
               <span className={cn('text-[10px] font-medium', highlight && 'mt-1')}>
-                {label}
+                {t(tkey)}
               </span>
             </>
           )}
@@ -50,7 +53,8 @@ export const BottomNav = () => (
       ))}
     </div>
   </nav>
-);
+  );
+};
 
 // ─── Icons ─────────────────────────────────────────────────────────────────────
 

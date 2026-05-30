@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import { BottomNav } from '@/widgets/bottom-nav/BottomNav';
+import { WeeklyRecapReels } from '@/widgets/weekly-recap/WeeklyRecapReels';
 
 export const AppLayout = () => (
   <div className="relative w-full max-w-mobile h-dvh bg-bg-base flex flex-col overflow-hidden">
@@ -7,5 +8,6 @@ export const AppLayout = () => (
       <Outlet />
     </main>
     <BottomNav />
+    <WeeklyRecapReels />
   </div>
 );

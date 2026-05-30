@@ -1,14 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Plus } from 'lucide-react';
 import { useUserStore } from '@/entities/user/model/userStore';
 import { useFinanceStore } from '@/entities/finance/model/financeStore';
+import { useUserTxStore } from '@/entities/finance/model/userTxStore';
+import { MOCK_TRANSACTIONS } from '@/entities/finance/model/transactions';
+import { analyzeDay } from '@/entities/finance/model/dayAnalytics';
+import { byCategory, summarize } from '@/entities/finance/model/financeSelectors';
+import { getCategoryMeta } from '@/entities/finance/model/categoryMeta';
 import { Card } from '@/shared/ui/Card';
 import { Badge } from '@/shared/ui/Badge';
 import { ProgressBar } from '@/shared/ui/ProgressBar';
 import { formatCurrency, getGreeting } from '@/shared/lib/formatters';
-import type { AiInsight, CategorySummary, Goal } from '@/shared/types';
+import type { AiInsight, CategorySummary, Goal, Transaction } from '@/shared/types';
 import { AnalyticsModal } from '@/widgets/AnalyticsModal';
-import { InsightFeed } from '@/widgets/insight-feed/InsightFeed';
+import { AddTransactionSheet } from '@/features/add-transaction';
 import { AskAiButton, useAskAi } from '@/features/ask-ai';
 
 // ─── Stagger animation ─────────────────────────────────────────────────────────
@@ -24,31 +30,169 @@ const container = {
 // ─── Week calendar strip ───────────────────────────────────────────────────────
 const DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
-const WeekStrip = () => {
+export const getWeekDates = (): Date[] => {
   const today = new Date();
-  const dow = today.getDay(); // 0=Sun
   const monday = new Date(today);
-  monday.setDate(today.getDate() - ((dow + 6) % 7));
+  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  return DAYS.map((_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
+  });
+};
+
+const WeekStrip = ({ selected, onSelect }: { selected: Date; onSelect: (d: Date) => void }) => {
+  const today = new Date();
+  const dates = getWeekDates();
 
   return (
     <div className="flex justify-between items-center px-1">
-      {DAYS.map((d, i) => {
-        const date = new Date(monday);
-        date.setDate(monday.getDate() + i);
+      {dates.map((date, i) => {
         const isToday = date.toDateString() === today.toDateString();
-        const dayNum = date.getDate();
+        const isSelected = date.toDateString() === selected.toDateString();
+        const isFuture = date.setHours(0, 0, 0, 0) > new Date().setHours(0, 0, 0, 0);
+        const d2 = dates[i]; // restore (setHours mutated)
+        const dayNum = d2.getDate();
         return (
-          <div key={d} className="flex flex-col items-center gap-1.5">
-            <span className="text-[11px] font-medium text-text-tertiary">{d}</span>
+          <button
+            key={i}
+            disabled={isFuture}
+            onClick={() => onSelect(dates[i])}
+            className="flex flex-col items-center gap-1.5 disabled:opacity-30"
+          >
+            <span className={`text-[11px] font-medium ${isToday ? 'text-primary' : 'text-text-tertiary'}`}>{DAYS[i]}</span>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-              isToday ? 'bg-text-primary text-white shadow-card' : 'text-text-secondary'
+              isSelected ? 'bg-gradient-primary text-white shadow-primary'
+              : isToday ? 'bg-text-primary text-white shadow-card'
+              : 'text-text-secondary hover:bg-bg-muted'
             }`}>
               {dayNum}
             </div>
-          </div>
+          </button>
         );
       })}
     </div>
+  );
+};
+
+// ─── Day detail (для прошедших дней) ──────────────────────────────────────────────
+
+const DayDetail = ({ date, txs }: { date: Date; txs: Transaction[] }) => {
+  const from = new Date(date); from.setHours(0, 0, 0, 0);
+  const to = new Date(date); to.setHours(23, 59, 59, 999);
+  const dayTx = txs
+    .filter(t => { const d = +new Date(t.date); return d >= +from && d <= +to; })
+    .sort((a, b) => b.amount - a.amount);
+  const sum = summarize(dayTx);
+  const cats = byCategory(dayTx, 'expense');
+  const a = analyzeDay(txs, date, getWeekDates());
+  const dateLabel = date.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  return (
+    <>
+      {/* Сводка дня */}
+      <motion.div variants={item} className="px-5 mb-4">
+        <div className="rounded-2xl p-5 bg-gradient-card-pink border border-primary/15">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-xs text-primary font-semibold uppercase tracking-wide">Сводка дня</p>
+              <h2 className="text-lg font-bold text-text-primary capitalize">{dateLabel}</h2>
+            </div>
+            <span className="text-xs text-text-tertiary">{a.count} операций</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-white/70 rounded-xl p-3">
+              <p className="text-xs text-text-tertiary">Расход</p>
+              <p className="font-bold text-danger">{formatCurrency(sum.expense)}</p>
+            </div>
+            <div className="bg-white/70 rounded-xl p-3">
+              <p className="text-xs text-text-tertiary">Доход</p>
+              <p className="font-bold text-success">{sum.income > 0 ? formatCurrency(sum.income) : '—'}</p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Что интересного */}
+      {a.facts.length > 0 && (
+        <motion.div variants={item} className="px-5 mb-4">
+          <Card variant="default" padding="lg">
+            <h3 className="text-base font-bold text-text-primary mb-3">Что интересного 👀</h3>
+            <div className="flex flex-col gap-2">
+              {a.facts.map((f, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                  <p className="text-sm text-text-secondary leading-snug">{f}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Расходы по категориям за день */}
+      {cats.length > 0 && (
+        <motion.div variants={item} className="px-5 mb-4">
+          <Card variant="default" padding="lg">
+            <h3 className="text-base font-bold text-text-primary mb-4">Расходы по категориям</h3>
+            <div className="flex flex-col gap-3">
+              {cats.map(c => (
+                <div key={c.id} className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style={{ backgroundColor: c.color + '20' }}>{c.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm font-medium text-text-primary truncate">{c.label}</span>
+                      <span className="text-sm font-semibold text-text-primary">{formatCurrency(c.amount)}</span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-border-light overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${c.pct}%`, backgroundColor: c.color }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Операции дня */}
+      <motion.div variants={item} className="px-5 mb-4">
+        <Card variant="default" padding="lg">
+          <h3 className="text-base font-bold text-text-primary mb-3">Операции дня</h3>
+          {dayTx.length === 0 ? (
+            <p className="text-sm text-text-tertiary text-center py-4">В этот день операций не было 👌</p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {dayTx.map(t => {
+                const m = getCategoryMeta(t.category);
+                const inc = t.type === 'income';
+                return (
+                  <div key={t.id} className="flex items-center gap-3">
+                    <span className="w-9 h-9 rounded-xl flex items-center justify-center text-base flex-shrink-0" style={{ backgroundColor: m.color + '20' }}>{m.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-text-primary truncate">{t.title}</p>
+                      <p className="text-xs text-text-tertiary">{m.label} · {t.method === 'cash' ? 'наличные' : 'карта'}</p>
+                    </div>
+                    <span className={`font-bold text-sm ${inc ? 'text-success' : 'text-text-primary'}`}>{inc ? '+' : '−'}{formatCurrency(t.amount)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+      </motion.div>
+
+      {/* AI */}
+      {dayTx.length > 0 && (
+        <motion.div variants={item} className="px-5 mb-6">
+          <AskAiButton
+            variant="solid"
+            question={`Разбери мой день (${dateLabel}): потрачено ${sum.expense} ₽${cats[0] ? `, больше всего на «${cats[0].label}»` : ''}. Это нормально для меня и что можно улучшить?`}
+            label="Разобрать день с AI"
+          />
+        </motion.div>
+      )}
+    </>
   );
 };
 
@@ -145,8 +289,14 @@ const CategoryRow = ({ cat }: { cat: CategorySummary }) => {
 export const DashboardPage = () => {
   const user = useUserStore(s => s.user);
   const { profile, fetchProfile } = useFinanceStore();
+  const { txs: userTx, addTx } = useUserTxStore();
   const [visibleInsights, setVisibleInsights] = useState(profile.insights);
+  const [selectedDay, setSelectedDay] = useState(() => new Date());
+  const [addOpen, setAddOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const allTx = useMemo<Transaction[]>(() => [...userTx, ...MOCK_TRANSACTIONS], [userTx]);
+  const isToday = selectedDay.toDateString() === new Date().toDateString();
 
   useEffect(() => {
     fetchProfile();
@@ -196,7 +346,10 @@ export const DashboardPage = () => {
       {/* ── Week strip ── */}
       <motion.div variants={item} className="px-5 mb-4">
         <Card variant="default" padding="md">
-          <WeekStrip />
+          <WeekStrip selected={selectedDay} onSelect={setSelectedDay} />
+          {!isToday && (
+            <p className="text-[11px] text-text-tertiary text-center mt-2.5">Сводка за выбранный день ниже · нажми «Сегодня» для обзора</p>
+          )}
         </Card>
       </motion.div>
 
@@ -248,6 +401,7 @@ export const DashboardPage = () => {
         </div>
       </motion.div>
 
+      {isToday && (<>
       {/* ── AI Insights ── */}
       {visibleInsights.length > 0 && (
         <motion.div variants={item} className="px-5 mb-4 flex flex-col gap-3">
@@ -331,11 +485,29 @@ export const DashboardPage = () => {
         </Card>
       </motion.div>
 
-      {/* ── AI insight feed (blocks с вопросами) ── */}
-      <motion.div variants={item} className="px-5 mb-6">
-        <InsightFeed />
-      </motion.div>
+      </>)}
+
+      {!isToday && <DayDetail date={selectedDay} txs={allTx} />}
     </motion.div>
+
+      {/* ── FAB: добавить операцию ── */}
+      <div className="fixed inset-x-0 bottom-24 z-40 pointer-events-none">
+        <div className="max-w-mobile mx-auto px-5 flex justify-end">
+          <button
+            onClick={() => setAddOpen(true)}
+            className="pointer-events-auto w-14 h-14 rounded-full bg-gradient-primary text-white shadow-primary flex items-center justify-center active:scale-90 transition-transform"
+          >
+            <Plus size={26} />
+          </button>
+        </div>
+      </div>
+
+      <AddTransactionSheet
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onAdd={addTx}
+        defaultDate={isToday ? undefined : selectedDay.toISOString()}
+      />
 
       <AnalyticsModal />
     </>

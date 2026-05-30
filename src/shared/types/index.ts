@@ -28,6 +28,8 @@ export interface User {
   notificationsEnabled?: boolean;
   darkMode?: boolean;
   language?: 'ru' | 'en';
+  pinEnabled?: boolean;
+  biometricEnabled?: boolean;
 }
 
 // ─── Onboarding Quiz Types ───────────────────────────────────────────────────

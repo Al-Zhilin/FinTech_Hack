@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Cell, PieChart, Pie } from 'recharts';
 import {
-  Plus, Search, Mic, Camera, QrCode, Pencil, CreditCard, Wallet,
+  Plus, Search, CreditCard, Wallet,
   TrendingUp, TrendingDown, ChevronDown, X, ArrowUpRight, ArrowDownRight,
   Calculator, ChevronRight,
 } from 'lucide-react';
@@ -14,15 +14,15 @@ import {
   periodRange, inRange, summarize, byCategory, buildSeries,
   weekdayInsight, spendingComment, type DateRange,
 } from '@/entities/finance/model/financeSelectors';
-import { getCategoryMeta, categoriesFor } from '@/entities/finance/model/categoryMeta';
-import { useVoiceCapture, parseVoiceExpense } from '@/features/add-transaction/useVoiceCapture';
+import { getCategoryMeta } from '@/entities/finance/model/categoryMeta';
+import { AddTransactionSheet } from '@/features/add-transaction';
 import { AskAiButton } from '@/features/ask-ai';
 import { Card } from '@/shared/ui/Card';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { formatCurrency, formatDate } from '@/shared/lib/formatters';
-import type { FinancePeriod, TxMethod, TxType, Transaction } from '@/shared/types';
+import type { FinancePeriod, Transaction } from '@/shared/types';
 
 const item = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
@@ -367,146 +367,5 @@ export const FinancePage = () => {
         </div>
       </BottomSheet>
     </motion.div>
-  );
-};
-
-// ─── Add transaction (voice / photo / qr / manual) ──────────────────────────────
-
-type AddMode = 'menu' | 'voice' | 'manual';
-
-const AddTransactionSheet = ({
-  open, onClose, onAdd,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onAdd: (t: { type: TxType; amount: number; category: string; title: string; method: TxMethod }) => void;
-}) => {
-  const [mode, setMode] = useState<AddMode>('menu');
-  const voice = useVoiceCapture();
-
-  // manual form
-  const [type, setType] = useState<TxType>('expense');
-  const [amount, setAmount] = useState('');
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('food');
-  const [method, setMethod] = useState<TxMethod>('cash');
-
-  const reset = () => { setMode('menu'); setAmount(''); setTitle(''); setCategory('food'); setMethod('cash'); setType('expense'); voice.reset(); };
-  const close = () => { reset(); onClose(); };
-
-  const parsed = parseVoiceExpense(voice.transcript);
-
-  const saveVoice = () => {
-    if (parsed.amount <= 0) return;
-    onAdd({ type: 'expense', amount: parsed.amount, category: 'other', title: parsed.title, method: 'cash' });
-    close();
-  };
-
-  const saveManual = () => {
-    const amt = Number(amount);
-    if (!amt) return;
-    onAdd({ type, amount: amt, category, title: title.trim() || getCategoryMeta(category).label, method });
-    close();
-  };
-
-  return (
-    <BottomSheet open={open} onClose={close} title={mode === 'menu' ? 'Добавить операцию' : mode === 'voice' ? 'Голосовой ввод' : 'Вручную'}>
-      {mode === 'menu' && (
-        <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => { setMode('voice'); }} className="col-span-2 flex items-center gap-3 p-4 rounded-2xl bg-gradient-primary text-white shadow-primary active:scale-[0.98] transition-transform">
-            <Mic size={24} />
-            <div className="text-left">
-              <p className="font-bold">Голосом</p>
-              <p className="text-xs text-white/80">Быстрый ввод наличных трат</p>
-            </div>
-          </button>
-          <button onClick={() => setMode('manual')} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-bg-muted active:scale-[0.98] transition-transform">
-            <Pencil size={22} className="text-primary" />
-            <span className="text-sm font-semibold text-text-primary">Вручную</span>
-          </button>
-          <button onClick={() => setMode('manual')} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-bg-muted active:scale-[0.98] transition-transform">
-            <Camera size={22} className="text-primary" />
-            <span className="text-sm font-semibold text-text-primary">Фото чека</span>
-          </button>
-          <button onClick={() => setMode('manual')} className="col-span-2 flex items-center justify-center gap-2 p-3 rounded-2xl bg-bg-muted active:scale-[0.98] transition-transform">
-            <QrCode size={20} className="text-primary" />
-            <span className="text-sm font-semibold text-text-primary">Сканировать QR чека</span>
-          </button>
-          <p className="col-span-2 text-[11px] text-text-tertiary text-center">Фото и QR используют ручной ввод — распознавание скоро</p>
-        </div>
-      )}
-
-      {mode === 'voice' && (
-        <div className="flex flex-col items-center gap-4 py-2">
-          {!voice.supported ? (
-            <p className="text-sm text-text-secondary text-center">Голосовой ввод не поддерживается в этом браузере. Воспользуйтесь ручным вводом.</p>
-          ) : (
-            <>
-              <button
-                onClick={() => voice.listening ? voice.stop() : voice.start()}
-                className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${voice.listening ? 'bg-danger text-white animate-pulse' : 'bg-gradient-primary text-white shadow-primary'}`}
-              >
-                <Mic size={32} />
-              </button>
-              <p className="text-sm text-text-tertiary text-center">
-                {voice.listening ? 'Говорите… например «кофе 250»' : 'Нажмите и назовите трату'}
-              </p>
-              {voice.transcript && (
-                <div className="w-full bg-bg-muted rounded-xl p-4 text-center">
-                  <p className="text-sm text-text-secondary mb-1">«{voice.transcript}»</p>
-                  <p className="text-lg font-bold text-text-primary">
-                    {parsed.title} — {parsed.amount > 0 ? formatCurrency(parsed.amount) : '—'}
-                  </p>
-                </div>
-              )}
-              <Button size="lg" fullWidth disabled={parsed.amount <= 0} onClick={saveVoice}>
-                Добавить наличный расход
-              </Button>
-            </>
-          )}
-          <button onClick={() => setMode('menu')} className="text-sm text-text-tertiary">Назад</button>
-        </div>
-      )}
-
-      {mode === 'manual' && (
-        <div className="flex flex-col gap-4">
-          <div className="flex gap-2 p-1 bg-bg-muted rounded-xl">
-            {([['expense', 'Расход'], ['income', 'Доход']] as const).map(([t, label]) => (
-              <button key={t} onClick={() => { setType(t); setCategory(t === 'income' ? 'salary' : 'food'); }}
-                className={`flex-1 h-9 rounded-lg text-sm font-semibold transition-all ${type === t ? 'bg-white shadow-card text-text-primary' : 'text-text-tertiary'}`}>
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <Input label="Сумма" type="number" inputMode="numeric" placeholder="0" suffix={<span className="text-sm">₽</span>}
-            value={amount} onChange={e => setAmount(e.target.value)} />
-          <Input label="Описание" placeholder="Например, Обед" value={title} onChange={e => setTitle(e.target.value)} />
-
-          <div>
-            <p className="text-sm font-medium text-text-primary mb-2">Категория</p>
-            <div className="flex flex-wrap gap-2">
-              {categoriesFor(type).map(c => (
-                <button key={c.id} onClick={() => setCategory(c.id)}
-                  className={`flex items-center gap-1.5 px-3 h-9 rounded-full text-sm transition-all ${category === c.id ? 'bg-primary-light ring-2 ring-primary text-text-primary' : 'bg-bg-muted text-text-secondary'}`}>
-                  <span>{c.icon}</span>{c.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex gap-2 p-1 bg-bg-muted rounded-xl">
-            {([['cash', 'Наличные'], ['card', 'Карта']] as const).map(([m, label]) => (
-              <button key={m} onClick={() => setMethod(m)}
-                className={`flex-1 h-9 rounded-lg text-sm font-semibold transition-all ${method === m ? 'bg-white shadow-card text-text-primary' : 'text-text-tertiary'}`}>
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <Button size="lg" fullWidth disabled={!Number(amount)} onClick={saveManual}>Добавить</Button>
-        </div>
-      )}
-    </BottomSheet>
   );
 };
