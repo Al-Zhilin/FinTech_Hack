@@ -14,7 +14,7 @@ router = APIRouter()
 
 _HISTORY_LIMIT = 10
 # Таймаут для стриминга: connect ограничен, read — открыт до конца потока
-_STREAM_TIMEOUT = httpx.Timeout(connect=10.0, read=None, write=10.0, pool=10.0)
+_STREAM_TIMEOUT = httpx.Timeout(connect=10.0, read=None, write=10.0, pool=10.0) 
 
 
 async def _get_or_create_user(db, login: str) -> dict:
