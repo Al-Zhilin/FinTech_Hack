@@ -3,7 +3,6 @@ import { AnimatePresence, motion, type PanInfo } from 'framer-motion';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { useUserStore } from '@/entities/user/model/userStore';
 import { useUserTxStore } from '@/entities/finance/model/userTxStore';
-import { MOCK_TRANSACTIONS } from '@/entities/finance/model/transactions';
 import { buildWeeklyRecaps, buildRecapStory, type RecapBlock } from '@/entities/profile/model/weeklyRecap';
 import { useAskAi } from '@/features/ask-ai';
 
@@ -50,7 +49,7 @@ export const WeeklyRecapReels = () => {
   const ask = useAskAi();
 
   const story = useMemo(() => {
-    const recaps = buildWeeklyRecaps([...userTx, ...MOCK_TRANSACTIONS], 1);
+    const recaps = buildWeeklyRecaps(userTx, 1);
     return buildRecapStory(recaps[0], user?.name);
   }, [userTx, user?.name]);
 

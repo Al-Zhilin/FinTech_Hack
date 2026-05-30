@@ -5,13 +5,10 @@ import { useUserStore } from '@/entities/user/model/userStore';
 import { useFinanceStore } from '@/entities/finance/model/financeStore';
 import { useUserGoalsStore } from '@/entities/goal/model/userGoalsStore';
 import { useUserTxStore } from '@/entities/finance/model/userTxStore';
-import { MOCK_TRANSACTIONS } from '@/entities/finance/model/transactions';
 import { analyzeGoal } from '@/entities/goal/model/goalAnalysis';
 import { formatCurrency } from '@/shared/lib/formatters';
 import { AskAiButton } from '@/features/ask-ai';
-import type { Goal, Transaction } from '@/shared/types';
-
-const CASH = 8_400;
+import type { Goal } from '@/shared/types';
 
 const STATE_CFG = [
   { min: 65, emoji: '🟢', label: 'Стабильно', cls: 'text-success' },
@@ -48,10 +45,9 @@ export const HomeHero = () => {
 
   // ── Сегодняшние доход/расход ──
   const today = useMemo(() => {
-    const all: Transaction[] = [...userTx, ...MOCK_TRANSACTIONS];
     const from = new Date(); from.setHours(0, 0, 0, 0);
     let inc = 0, exp = 0;
-    for (const t of all) {
+    for (const t of userTx) {
       if (+new Date(t.date) < +from) continue;
       if (t.type === 'income') inc += t.amount; else exp += t.amount;
     }
@@ -69,7 +65,7 @@ export const HomeHero = () => {
   const ga = goal ? analyzeGoal(goal, finance) : null;
 
   // ── Прогноз через год ──
-  const yearSavings = profile.balance + freeCash * 12;
+  const yearSavings = freeCash * 12;
   const yearDebt = Math.max(0, credit * 12 - credit * 12); // при выплате долг закрывается
   const yearHealth = Math.min(100, health + (freeCash > 0 ? 12 : 0));
 

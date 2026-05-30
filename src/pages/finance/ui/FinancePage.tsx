@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useFinanceStore } from '@/entities/finance/model/financeStore';
 import { useUserTxStore } from '@/entities/finance/model/userTxStore';
-import { MOCK_TRANSACTIONS } from '@/entities/finance/model/transactions';
 import {
   periodRange, inRange, summarize, byCategory, buildSeries,
   weekdayInsight, spendingComment, type DateRange,
@@ -35,7 +34,6 @@ const PERIODS: { id: FinancePeriod; label: string }[] = [
   { id: 'custom', label: 'Свой' },
 ];
 
-const CASH_BALANCE = 8_400; // наличные на руках (демо)
 
 export const FinancePage = () => {
   const profile = useFinanceStore(s => s.profile);
@@ -50,7 +48,7 @@ export const FinancePage = () => {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
 
-  const allTx = useMemo<Transaction[]>(() => [...userTx, ...MOCK_TRANSACTIONS], [userTx]);
+  const allTx = userTx;
 
   const custom: DateRange | undefined =
     customFrom && customTo ? { from: new Date(customFrom), to: new Date(customTo + 'T23:59:59') } : undefined;
@@ -72,8 +70,7 @@ export const FinancePage = () => {
     return weekdayInsight(allTx.filter(t => inRange(t, r)));
   }, [allTx]);
 
-  const balanceCard = profile.balance;
-  const totalBalance = balanceCard + CASH_BALANCE;
+  const totalBalance = profile.balance;
 
   // История: поиск + фильтр
   const history = useMemo(() => {
@@ -97,23 +94,16 @@ export const FinancePage = () => {
       <motion.div variants={item} className="px-5 pt-12 pb-4">
         <p className="text-text-tertiary text-sm">Общий баланс</p>
         <h1 className="text-4xl font-bold text-text-primary mb-4">{formatCurrency(totalBalance)}</h1>
-        <div className="grid grid-cols-3 gap-2">
-          <div className="bg-white rounded-xl p-3 shadow-card">
-            <CreditCard size={16} className="text-primary mb-1" />
-            <p className="text-[11px] text-text-tertiary">Карта</p>
-            <p className="font-bold text-sm text-text-primary">{formatCurrency(balanceCard, true)}</p>
-          </div>
-          <div className="bg-white rounded-xl p-3 shadow-card">
-            <Wallet size={16} className="text-purple mb-1" />
-            <p className="text-[11px] text-text-tertiary">Наличные</p>
-            <p className="font-bold text-sm text-text-primary">{formatCurrency(CASH_BALANCE, true)}</p>
-          </div>
+        <div className="grid grid-cols-2 gap-2">
           <div className="bg-white rounded-xl p-3 shadow-card">
             <TrendingUp size={16} className="text-success mb-1" />
-            <p className="text-[11px] text-text-tertiary">Свободно</p>
-            <p className={`font-bold text-sm ${summary.net >= 0 ? 'text-success' : 'text-danger'}`}>
-              {formatCurrency(summary.net, true)}
-            </p>
+            <p className="text-[11px] text-text-tertiary">Доходы за период</p>
+            <p className="font-bold text-sm text-success">{formatCurrency(summary.income, true)}</p>
+          </div>
+          <div className="bg-white rounded-xl p-3 shadow-card">
+            <TrendingDown size={16} className="text-danger mb-1" />
+            <p className="text-[11px] text-text-tertiary">Расходы за период</p>
+            <p className="font-bold text-sm text-danger">{formatCurrency(summary.expense, true)}</p>
           </div>
         </div>
       </motion.div>

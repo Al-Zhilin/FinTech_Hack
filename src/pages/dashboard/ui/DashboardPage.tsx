@@ -4,15 +4,14 @@ import { Plus } from 'lucide-react';
 import { useUserStore } from '@/entities/user/model/userStore';
 import { useFinanceStore } from '@/entities/finance/model/financeStore';
 import { useUserTxStore } from '@/entities/finance/model/userTxStore';
-import { MOCK_TRANSACTIONS } from '@/entities/finance/model/transactions';
-import { analyzeDay } from '@/entities/finance/model/dayAnalytics';
-import { byCategory, summarize } from '@/entities/finance/model/financeSelectors';
+import { byCategory, periodRange, inRange, summarize } from '@/entities/finance/model/financeSelectors';
 import { getCategoryMeta } from '@/entities/finance/model/categoryMeta';
+import { analyzeDay } from '@/entities/finance/model/dayAnalytics';
 import { Card } from '@/shared/ui/Card';
 import { Badge } from '@/shared/ui/Badge';
 import { ProgressBar } from '@/shared/ui/ProgressBar';
 import { formatCurrency, getGreeting } from '@/shared/lib/formatters';
-import type { AiInsight, CategorySummary, Goal, Transaction } from '@/shared/types';
+import type { AiInsight, CategorySummary, ExpenseCategory, Goal, Transaction } from '@/shared/types';
 import { AnalyticsModal } from '@/widgets/AnalyticsModal';
 import { AddTransactionSheet } from '@/features/add-transaction';
 import { AskAiButton, useAskAi } from '@/features/ask-ai';
@@ -341,8 +340,27 @@ export const DashboardPage = () => {
   const [addOpen, setAddOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const allTx = useMemo<Transaction[]>(() => [...userTx, ...MOCK_TRANSACTIONS], [userTx]);
+  const allTx = userTx;
   const isToday = selectedDay.toDateString() === new Date().toDateString();
+
+  // Категории за текущий месяц из реальных транзакций
+  const monthRange = useMemo(() => periodRange('month'), []);
+  const monthlyCategories = useMemo((): CategorySummary[] => {
+    const monthTx = userTx.filter(t => inRange(t, monthRange) && t.type === 'expense');
+    const slices = byCategory(monthTx, 'expense');
+    const income = user?.income ?? 1;
+    return slices.map(s => {
+      const meta = getCategoryMeta(s.id as ExpenseCategory);
+      return {
+        category: s.id as ExpenseCategory,
+        label: s.label,
+        amount: s.amount,
+        budget: Math.max(s.amount, Math.round(income * 0.12)),
+        color: meta.color,
+        icon: meta.icon,
+      };
+    });
+  }, [userTx, monthRange, user?.income]);
 
   useEffect(() => {
     fetchProfile();
@@ -430,29 +448,44 @@ export const DashboardPage = () => {
                 <h2 className="text-base font-bold text-text-primary">Расходы за месяц</h2>
                 <Badge variant="muted">{new Date().toLocaleString('ru', { month: 'long' })}</Badge>
               </div>
-              <div className="flex flex-col gap-3">
-                {profile.categories.slice(0, 5).map(cat => (
-                  <CategoryRow key={cat.category} cat={cat} />
-                ))}
-              </div>
 
-              {/* AI-вывод из расходов + вопрос */}
-              {(() => {
-                const over = profile.categories.find(c => c.amount > c.budget);
-                const top = [...profile.categories].sort((a, b) => b.amount - a.amount)[0];
-                const text = over
-                  ? `Категория «${over.label}» вышла за бюджет на ${formatCurrency(over.amount - over.budget, true)}.`
-                  : `Больше всего уходит на «${top.label}» — ${formatCurrency(top.amount, true)} за месяц.`;
-                const question = over
-                  ? `Категория «${over.label}» превысила бюджет. Как мне сократить эти траты?`
-                  : `Больше всего я трачу на «${top.label}». Это нормально и где можно сэкономить?`;
-                return (
-                  <div className="mt-4 pt-4 border-t border-border-light flex items-center justify-between gap-3">
-                    <p className="text-xs text-text-secondary leading-snug flex-1">🤖 {text}</p>
-                    <AskAiButton question={question} label="Разобрать" className="flex-shrink-0" />
+              {monthlyCategories.length > 0 ? (
+                <>
+                  <div className="flex flex-col gap-3">
+                    {monthlyCategories.slice(0, 5).map(cat => (
+                      <CategoryRow key={cat.category} cat={cat} />
+                    ))}
                   </div>
-                );
-              })()}
+                  {(() => {
+                    const over = monthlyCategories.find(c => c.amount > c.budget);
+                    const top = [...monthlyCategories].sort((a, b) => b.amount - a.amount)[0];
+                    const text = over
+                      ? `Категория «${over.label}» вышла за бюджет на ${formatCurrency(over.amount - over.budget, true)}.`
+                      : `Больше всего уходит на «${top.label}» — ${formatCurrency(top.amount, true)} за месяц.`;
+                    const question = over
+                      ? `Категория «${over.label}» превысила бюджет. Как мне сократить эти траты?`
+                      : `Больше всего я трачу на «${top.label}». Это нормально и где можно сэкономить?`;
+                    return (
+                      <div className="mt-4 pt-4 border-t border-border-light flex items-center justify-between gap-3">
+                        <p className="text-xs text-text-secondary leading-snug flex-1">🤖 {text}</p>
+                        <AskAiButton question={question} label="Разобрать" className="flex-shrink-0" />
+                      </div>
+                    );
+                  })()}
+                </>
+              ) : (
+                <div className="flex flex-col items-center gap-3 py-6 text-center">
+                  <span className="text-3xl">📊</span>
+                  <p className="text-sm text-text-tertiary leading-snug">
+                    Добавьте первые операции,<br />чтобы увидеть расходы по категориям
+                  </p>
+                  <AskAiButton
+                    variant="chip"
+                    question="Как начать отслеживать расходы? Какие категории мне важно контролировать?"
+                    label="Спросить AI"
+                  />
+                </div>
+              )}
             </Card>
           </motion.div>
 
@@ -464,7 +497,8 @@ export const DashboardPage = () => {
             </motion.div>
           )}
 
-          {/* ── Upcoming payments ── */}
+          {/* ── Upcoming payments (только если есть) ── */}
+          {profile.upcomingPayments.length > 0 && (
           <motion.div variants={item} className="px-5 mb-6">
             <Card variant="default" padding="lg">
               <div className="flex items-center justify-between mb-4">
@@ -492,6 +526,7 @@ export const DashboardPage = () => {
               </div>
             </Card>
           </motion.div>
+          )}
 
         </>)}
 

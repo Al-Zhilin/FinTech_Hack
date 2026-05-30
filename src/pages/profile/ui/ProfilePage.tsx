@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useUserStore } from '@/entities/user/model/userStore';
 import { useUserTxStore } from '@/entities/finance/model/userTxStore';
-import { MOCK_TRANSACTIONS } from '@/entities/finance/model/transactions';
 import { GOAL_OPTIONS } from '@/entities/user/model/goals';
 import { getFinancialDna, getFinancialLevel } from '@/entities/profile/model/financialDna';
 import { LITERACY_CARDS, type LiteracyCard } from '@/entities/profile/model/literacy';
@@ -85,7 +84,7 @@ export const ProfilePage = () => {
 
   const dna = useMemo(() => getFinancialDna(user, profile), [user, profile]);
   const level = useMemo(() => getFinancialLevel(user, profile), [user, profile]);
-  const recaps = useMemo(() => buildWeeklyRecaps([...userTx, ...MOCK_TRANSACTIONS]), [userTx]);
+  const recaps = useMemo(() => buildWeeklyRecaps(userTx), [userTx]);
 
   if (!user) return null;
 

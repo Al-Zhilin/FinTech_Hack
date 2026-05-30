@@ -1,22 +1,26 @@
 import { create } from 'zustand';
-import type { FinancialProfile } from '@/shared/types';
-import { MOCK_FINANCE } from './mockData';
+import type { FinancialProfile, User } from '@/shared/types';
+import { buildProfileFromUser } from './buildProfileFromUser';
 
 interface FinanceState {
   profile: FinancialProfile;
   isLoading: boolean;
-  // When API is ready, replace this with a real fetch
+  syncFromUser: (user: User | null) => void;
   fetchProfile: () => Promise<void>;
 }
 
 export const useFinanceStore = create<FinanceState>((set) => ({
-  profile: MOCK_FINANCE,
+  profile: buildProfileFromUser(null),
   isLoading: false,
+
+  syncFromUser: (user) => {
+    set({ profile: buildProfileFromUser(user) });
+  },
 
   fetchProfile: async () => {
     set({ isLoading: true });
-    // TODO: replace with real API call
-    await new Promise(r => setTimeout(r, 800));
-    set({ profile: MOCK_FINANCE, isLoading: false });
+    const { useUserStore } = await import('@/entities/user/model/userStore');
+    const user = useUserStore.getState().user;
+    set({ profile: buildProfileFromUser(user), isLoading: false });
   },
 }));
