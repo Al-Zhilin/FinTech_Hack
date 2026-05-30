@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { onboardingStep, extractOptions, stripOptions } from '@/shared/api/onboarding';
+import { Button } from '@/shared/ui/Button';
 
 interface AIOnboardingProps {
   userLogin: string;
@@ -33,6 +34,7 @@ interface QA { question: string; answer: string }
 export const AIOnboarding = ({ userLogin, onBack, onComplete }: AIOnboardingProps) => {
   const [question, setQuestion] = useState(FIRST_QUESTION);
   const [options, setOptions] = useState<string[]>(FIRST_OPTIONS);
+  const [suggestedAnswers, setSuggestedAnswers] = useState<string[]>([]);
   const [history, setHistory] = useState<QA[]>([]);     // отвеченные пары
   const [questionNum, setQuestionNum] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -65,10 +67,12 @@ export const AIOnboarding = ({ userLogin, onBack, onComplete }: AIOnboardingProp
 
       if (result.complete) {
         setIsComplete(true);
+        setSuggestedAnswers([]);
         setSummary(result.profile_summary ?? 'Ваш финансовый профиль готов!');
       } else if (result.question) {
         setQuestion(stripOptions(result.question) || result.question);
         setOptions(extractOptions(result));
+        setSuggestedAnswers(Array.isArray(result.suggested_answers) ? result.suggested_answers.filter(Boolean) : []);
         setQuestionNum(n => Math.min(n + 1, TOTAL_QUESTIONS));
       }
       if (result.error && !result.complete) console.warn('Backend:', result.error);
@@ -195,22 +199,41 @@ export const AIOnboarding = ({ userLogin, onBack, onComplete }: AIOnboardingProp
                   ))}
 
                   {/* Свой вариант — на случай, когда AI не прислал опций или нужен ввод */}
-                  <div className="mt-2 flex gap-2 items-end">
-                    <textarea
-                      value={custom}
-                      onChange={e => setCustom(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); answer(custom); } }}
-                      placeholder={options.length ? 'Или свой вариант…' : 'Введите ответ…'}
-                      rows={1}
-                      className="flex-1 resize-none rounded-2xl border border-border bg-white px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:border-primary transition-colors"
-                      style={{ maxHeight: 96 }}
-                    />
-                    <button onClick={() => answer(custom)} disabled={!custom.trim()}
-                      className="h-10 w-10 rounded-2xl bg-gradient-primary flex items-center justify-center flex-shrink-0 disabled:opacity-40 active:scale-95 transition-transform">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M22 2L11 13M22 2L15 22L11 13L2 9L22 2Z" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
+                  <div className="mt-2 flex flex-col gap-2">
+                    {/* Suggested answers — быстрые ответы от AI */}
+                    {suggestedAnswers.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {suggestedAnswers.map((sa) => (
+                          <motion.button
+                            key={sa}
+                            initial={{ opacity: 0, scale: 0.92 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            onClick={() => answer(sa)}
+                            className="px-3 py-1.5 rounded-full bg-primary-light border border-primary/20 text-primary text-xs font-medium active:scale-95 transition-transform whitespace-nowrap"
+                          >
+                            {sa}
+                          </motion.button>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 items-end">
+                      <textarea
+                        value={custom}
+                        onChange={e => setCustom(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); answer(custom); } }}
+                        placeholder={options.length ? 'Или свой вариант…' : 'Введите ответ…'}
+                        rows={1}
+                        className="flex-1 resize-none rounded-2xl border border-border bg-white px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:border-primary transition-colors"
+                        style={{ maxHeight: 96 }}
+                      />
+                      <button onClick={() => answer(custom)} disabled={!custom.trim()}
+                        className="h-10 w-10 rounded-2xl bg-gradient-primary flex items-center justify-center flex-shrink-0 disabled:opacity-40 active:scale-95 transition-transform">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <path d="M22 2L11 13M22 2L15 22L11 13L2 9L22 2Z" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               </AnimatePresence>

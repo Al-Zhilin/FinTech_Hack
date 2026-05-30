@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
 import { useUserStore } from '@/entities/user/model/userStore';
 import { useChatStore } from '@/entities/chat/model/chatStore';
 import { sendChatMessage } from '@/shared/api/chat';
 import { cn } from '@/shared/lib/cn';
+import { CalculatorResultCard } from '@/widgets/chat/CalculatorResultCard';
 import type { ChatMessage } from '@/shared/types';
 
 // ─── Quick prompts ─────────────────────────────────────────────────────────────
@@ -37,31 +39,68 @@ const TypingIndicator = () => (
   </div>
 );
 
+// ─── Markdown prose styles ─────────────────────────────────────────────────────
+
+const mdComponents: React.ComponentProps<typeof ReactMarkdown>['components'] = {
+  p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
+  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+  em: ({ children }) => <em className="italic">{children}</em>,
+  ul: ({ children }) => <ul className="list-disc pl-4 mb-1.5 flex flex-col gap-0.5">{children}</ul>,
+  ol: ({ children }) => <ol className="list-decimal pl-4 mb-1.5 flex flex-col gap-0.5">{children}</ol>,
+  li: ({ children }) => <li className="leading-snug">{children}</li>,
+  h1: ({ children }) => <h1 className="font-bold text-base mb-1">{children}</h1>,
+  h2: ({ children }) => <h2 className="font-bold text-sm mb-1">{children}</h2>,
+  h3: ({ children }) => <h3 className="font-semibold text-sm mb-0.5">{children}</h3>,
+  code: ({ children }) => (
+    <code className="bg-black/10 rounded px-1 py-0.5 text-xs font-mono">{children}</code>
+  ),
+  blockquote: ({ children }) => (
+    <blockquote className="border-l-2 border-current/30 pl-3 opacity-80 my-1">{children}</blockquote>
+  ),
+};
+
 // ─── Message bubble ────────────────────────────────────────────────────────────
 
 const MessageBubble = ({ msg }: { msg: ChatMessage }) => {
   const isUser = msg.role === 'user';
+  const hasCalcResult =
+    !isUser &&
+    msg.calculator_result &&
+    Object.keys(msg.calculator_result).length > 0;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.25 }}
-      className={cn('flex', isUser ? 'justify-end' : 'justify-start')}
-    >
-      {!isUser && (
-        <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-white text-xs font-bold mr-2 mt-auto flex-shrink-0">
-          AI
+    <div className={cn('flex flex-col', isUser ? 'items-end' : 'items-start')}>
+      <motion.div
+        initial={{ opacity: 0, y: 12, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.25 }}
+        className={cn('flex', isUser ? 'justify-end' : 'justify-start', 'w-full')}
+      >
+        {!isUser && (
+          <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-white text-xs font-bold mr-2 mt-auto flex-shrink-0">
+            AI
+          </div>
+        )}
+        <div className={cn(
+          'max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
+          isUser
+            ? 'bg-gradient-primary text-white rounded-br-sm'
+            : 'bg-white shadow-card text-text-primary rounded-bl-sm'
+        )}>
+          {isUser ? (
+            <p className="whitespace-pre-line">{msg.content}</p>
+          ) : (
+            <ReactMarkdown components={mdComponents}>
+              {msg.content}
+            </ReactMarkdown>
+          )}
         </div>
+      </motion.div>
+
+      {hasCalcResult && (
+        <CalculatorResultCard result={msg.calculator_result!} />
       )}
-      <div className={cn(
-        'max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
-        isUser
-          ? 'bg-gradient-primary text-white rounded-br-sm'
-          : 'bg-white shadow-card text-text-primary rounded-bl-sm'
-      )}>
-        <p className="whitespace-pre-line">{msg.content}</p>
-      </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -111,11 +150,14 @@ export const ChatPage = () => {
     setStatus(null);
 
     let content: string;
+    let calcResult = undefined;
     try {
       const result = await sendChatMessage(login, payload, (raw) =>
         setStatus(STATUS_LABELS[raw] ?? raw),
       );
       content = result.text || 'Не удалось получить ответ. Попробуйте переформулировать вопрос.';
+      const cr = result.structured?.calculator_result;
+      if (cr && Object.keys(cr).length > 0) calcResult = cr;
     } catch {
       content = '⚠️ Не удалось связаться с AI. Проверьте подключение и попробуйте ещё раз.';
     }
@@ -127,6 +169,7 @@ export const ChatPage = () => {
       role: 'ai',
       content,
       timestamp: new Date().toISOString(),
+      calculator_result: calcResult,
     }]);
   };
 

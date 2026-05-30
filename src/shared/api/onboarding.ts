@@ -5,7 +5,8 @@ const API_BASE = '/api/v1';
 export interface OnboardingResult {
   complete: boolean;
   question?: string;
-  options?: string[];        // варианты ответа от AI (если бэкенд их прислал)
+  options?: string[];
+  suggested_answers?: string[];   // 2–3 готовых варианта быстрого ответа
   profile_summary?: string;
   error?: string;
 }

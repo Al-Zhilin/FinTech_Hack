@@ -17,6 +17,8 @@ import { AnalyticsModal } from '@/widgets/AnalyticsModal';
 import { AddTransactionSheet } from '@/features/add-transaction';
 import { AskAiButton, useAskAi } from '@/features/ask-ai';
 import { HomeHero } from './HomeHero';
+import { CashflowWidget } from '@/widgets/cashflow/CashflowWidget';
+import { PatternsWidget } from '@/widgets/patterns/PatternsWidget';
 
 // ─── Stagger animation ─────────────────────────────────────────────────────────
 const item = {
@@ -469,6 +471,14 @@ export const DashboardPage = () => {
               })()}
             </Card>
           </motion.div>
+
+          {/* ── Cashflow + Patterns ── */}
+          {user?.email && (
+            <motion.div variants={item} className="px-5 mb-4 flex flex-col gap-3">
+              <CashflowWidget userId={user.email} />
+              <PatternsWidget userId={user.email} />
+            </motion.div>
+          )}
 
           {/* ── Upcoming payments ── */}
           <motion.div variants={item} className="px-5 mb-6">

@@ -195,10 +195,45 @@ export type FinancePeriod = 'day' | 'week' | 'month' | 'year' | 'custom';
 
 export type MessageRole = 'user' | 'ai';
 
+export interface CalculatorHealth {
+  score?: number;
+  label?: string;
+  color?: string;
+  summary?: string;
+}
+
+export interface CalculatorSavingsPlan {
+  monthly?: number;
+  target?: number;
+  period_months?: number;
+  recommendation?: string;
+}
+
+export interface CalculatorCashflow {
+  will_be_negative?: boolean;
+  danger_day?: number;
+  verdict?: string;
+  days_left?: number;
+}
+
+export interface CalculatorTrafficLight {
+  color?: 'green' | 'yellow' | 'red';
+  label?: string;
+  message?: string;
+}
+
+export interface CalculatorResult {
+  health?: CalculatorHealth;
+  savings_plan?: CalculatorSavingsPlan;
+  cashflow?: CalculatorCashflow;
+  traffic_light?: CalculatorTrafficLight;
+}
+
 export interface ChatMessage {
   id: string;
   role: MessageRole;
   content: string;
   timestamp: string;
   isTyping?: boolean;
+  calculator_result?: CalculatorResult;
 }

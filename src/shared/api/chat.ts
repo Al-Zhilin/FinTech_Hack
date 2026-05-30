@@ -1,11 +1,12 @@
 import { streamSse } from './sse';
+import type { CalculatorResult } from '@/shared/types';
 
 const API_BASE = '/api/v1';
 
 export interface ChatResult {
   text: string;
   structured?: {
-    calculator_result?: unknown;
+    calculator_result?: CalculatorResult;
     [key: string]: unknown;
   };
   error?: string;

@@ -6,7 +6,7 @@ const RU: Dict = {
   // nav
   'nav.home': 'Главная',
   'nav.finance': 'Финансы',
-  'nav.ai': 'AI',
+  'nav.ai': 'Чат',
   'nav.goals': 'Цели',
   'nav.profile': 'Профиль',
   // profile sections
