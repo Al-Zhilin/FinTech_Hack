@@ -65,8 +65,8 @@ const WeekStrip = ({ selected, onSelect }: { selected: Date; onSelect: (d: Date)
           >
             <span className={`text-[11px] font-medium ${isToday ? 'text-primary' : 'text-text-tertiary'}`}>{DAYS[i]}</span>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${isSelected ? 'bg-gradient-primary text-white shadow-primary'
-                : isToday ? 'bg-text-primary text-white shadow-card'
-                  : 'text-text-secondary hover:bg-bg-muted'
+              : isToday ? 'bg-text-primary text-white shadow-card'
+                : 'text-text-secondary hover:bg-bg-muted'
               }`}>
               {dayNum}
             </div>
@@ -214,24 +214,8 @@ const InsightCard = ({ insight, onDismiss }: { insight: AiInsight; onDismiss: ()
   const question = `Разбери подробнее: «${insight.title}». ${insight.body} Что мне с этим делать?`;
 
   return (
-    <div className={`${c.bg} rounded-xl p-4 relative`}>
-      <button
-        onClick={onDismiss}
-        className="absolute top-3 right-3 w-5 h-5 flex items-center justify-center text-text-tertiary text-lg leading-none"
-      >×</button>
-      <div className="pr-5">
-        <p className="text-xs font-semibold text-text-tertiary mb-1 uppercase tracking-wide">
-          {insight.type === 'warning' ? 'Инайт дня' : insight.type === 'forecast' ? 'Прогноз' : insight.type === 'success' ? 'Результат' : 'Совет'}
-        </p>
-        <p className={`font-bold text-base ${c.text} mb-1`}>{insight.title}</p>
-        <p className="text-sm text-text-secondary leading-snug">{insight.body}</p>
-        <button
-          onClick={() => ask(question)}
-          className={`text-sm font-semibold ${c.text} mt-2 flex items-center gap-1`}
-        >
-          {insight.action ?? 'Что с этим делать?'} →
-        </button>
-      </div>
+    <div >
+
     </div>
   );
 };
@@ -428,15 +412,15 @@ export const DashboardPage = () => {
           )}
 
           {/* ── Goals horizontal scroll ── */}
-          <motion.div variants={item} className="mb-4">
-            <div className="flex items-center justify-between px-5 mb-3">
+          <motion.div variants={item}>
+            {/* <div className="flex items-center justify-between px-5 mb-3">
               <h2 className="text-lg font-bold text-text-primary">Обзор</h2>
               <span className="text-xs text-text-tertiary">Листай вправо →</span>
             </div>
             <div ref={scrollRef}
               className="flex gap-3 overflow-x-auto scrollbar-hide px-5 pb-1">
               {profile.goals.map(goal => <GoalCard key={goal.id} goal={goal} />)}
-            </div>
+            </div> */}
           </motion.div>
 
           {/* ── Expenses breakdown ── */}

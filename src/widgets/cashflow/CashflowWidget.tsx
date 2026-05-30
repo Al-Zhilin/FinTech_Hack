@@ -20,7 +20,6 @@ export const CashflowWidget = ({ userId }: Props) => {
     let cancelled = false;
     getCashflow(userId)
       .then(r => { if (!cancelled) setData(r); })
-      .catch(() => { if (!cancelled) setData({ error: 'Не удалось загрузить прогноз', verdict: '' }); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [userId]);
@@ -30,15 +29,9 @@ export const CashflowWidget = ({ userId }: Props) => {
     const d = parseInt(days);
     if (isNaN(b) || isNaN(d) || d < 1) return;
     setCalcLoading(true);
-    try {
-      const r = await calculateCashflow(userId, b, d);
-      setData(r);
-      setShowCalc(false);
-    } catch {
-      // keep existing data
-    } finally {
-      setCalcLoading(false);
-    }
+    const r = await calculateCashflow(userId, b, d);
+    setCalcLoading(false);
+    if (r) { setData(r); setShowCalc(false); }
   };
 
   if (loading) {

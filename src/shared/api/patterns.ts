@@ -10,8 +10,12 @@ export interface PatternsResult {
   error?: string;
 }
 
-export async function getPatterns(userId: string): Promise<PatternsResult> {
-  const res = await fetch(`${API_BASE}/ai/patterns/${encodeURIComponent(userId)}`);
-  if (!res.ok) throw new Error(`Ошибка сервера: ${res.status}`);
-  return res.json();
+export async function getPatterns(userId: string): Promise<PatternsResult | null> {
+  try {
+    const res = await fetch(`${API_BASE}/ai/patterns/${encodeURIComponent(userId)}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
 }

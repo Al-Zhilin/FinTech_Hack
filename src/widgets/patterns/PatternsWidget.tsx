@@ -38,7 +38,6 @@ export const PatternsWidget = ({ userId }: Props) => {
     let cancelled = false;
     getPatterns(userId)
       .then(r => { if (!cancelled) setData(r); })
-      .catch(() => { if (!cancelled) setData({ insight: 'Не удалось загрузить анализ паттернов', error: 'network' }); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [userId]);
