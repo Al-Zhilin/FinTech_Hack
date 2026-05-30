@@ -1,14 +1,20 @@
+import asyncio
 import json
 from datetime import datetime, timezone
+
 import httpx
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.scheduler import refresh_user_cache
 from app.schemas.onboarding import OnboardingRequest, OnboardingResponse
 
 router = APIRouter()
+
+_NO_CONNECTION = "Нет соединения с AI-сервером"
+
 
 def _map_ai_profile_to_user_profile(ai_profile: dict) -> dict:
     finances: dict = ai_profile.get("finances") or {}
@@ -43,10 +49,7 @@ async def _get_or_create_user(db, login: str) -> dict:
 
 
 async def _call_ai_onboarding(login: str, message: str) -> dict:
-    payload = {
-        "user_id": login,
-        "message": message,
-    }
+    payload = {"user_id": login, "message": message}
     try:
         async with httpx.AsyncClient(verify=settings.httpx_verify, timeout=60.0, trust_env=False) as client:
             response = await client.post(f"{settings.AI_SERVICE_URL}/ai/onboarding", json=payload)
@@ -68,6 +71,8 @@ async def _persist_ai_response(db, login: str, ai_data: dict) -> None:
         })
     if ai_data.get("complete"):
         await _save_profile(db, login)
+        # Обновляем кеш AI-данных сразу после завершения онбординга
+        asyncio.create_task(refresh_user_cache(login))
 
 
 async def _save_profile(db, login: str) -> None:
@@ -104,7 +109,11 @@ async def onboarding_step(request: OnboardingRequest) -> OnboardingResponse:
         "created_at": datetime.now(timezone.utc),
     })
 
-    ai_data = await _call_ai_onboarding(request.login, request.message)
+    try:
+        ai_data = await _call_ai_onboarding(request.login, request.message)
+    except Exception:
+        raise HTTPException(status_code=503, detail=_NO_CONNECTION)
+
     await _persist_ai_response(db, request.login, ai_data)
     return OnboardingResponse(**ai_data)
 
@@ -126,8 +135,8 @@ async def stream_onboarding_step(request: OnboardingRequest) -> StreamingRespons
 
         try:
             ai_data = await _call_ai_onboarding(request.login, request.message)
-        except HTTPException as exc:
-            yield f"event: error\ndata: {json.dumps({'error': exc.detail})}\n\n"
+        except Exception:
+            yield f"event: error\ndata: {json.dumps({'error': _NO_CONNECTION}, ensure_ascii=False)}\n\n"
             return
 
         await _persist_ai_response(db, request.login, ai_data)

@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, timezone
+
 import httpx
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -11,8 +12,8 @@ from app.schemas.chat import ChatRequest, ChatResponse
 router = APIRouter()
 
 _HISTORY_LIMIT = 10
-# Таймаут для стриминга: connect ограничен, read — открыт до конца потока
-_STREAM_TIMEOUT = httpx.Timeout(connect=10.0, read=None, write=10.0, pool=10.0) 
+_STREAM_TIMEOUT = httpx.Timeout(connect=10.0, read=None, write=10.0, pool=10.0)
+_NO_CONNECTION = "Нет соединения с AI-сервером"
 
 
 async def _get_or_create_user(db, login: str) -> dict:
@@ -66,10 +67,8 @@ async def send_message(request: ChatRequest) -> ChatResponse:
             response = await client.post(f"{settings.AI_SERVICE_URL}/ai/process", json=payload)
             response.raise_for_status()
             ai_data: dict = response.json()
-    except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"AI service error: {type(exc).__name__}: {exc}")
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Unexpected error: {type(exc).__name__}: {exc}")
+    except Exception:
+        raise HTTPException(status_code=503, detail=_NO_CONNECTION)
 
     await db.messages.insert_one({
         "login": request.login,
@@ -77,9 +76,6 @@ async def send_message(request: ChatRequest) -> ChatResponse:
         "content": ai_data.get("text", ""),
         "created_at": datetime.now(timezone.utc),
     })
-
-    if ai_data.get("error"):
-        raise HTTPException(status_code=502, detail=f"AI error: {ai_data['error']}")
 
     return ChatResponse(**ai_data)
 
@@ -128,8 +124,8 @@ async def stream_message(request: ChatRequest) -> StreamingResponse:
                                     result_text = data.get("text", "")
                             except json.JSONDecodeError:
                                 pass
-        except Exception as exc:
-            yield f"event: error\ndata: {json.dumps({'error': str(exc)})}\n\n"
+        except Exception:
+            yield f"event: error\ndata: {json.dumps({'error': _NO_CONNECTION}, ensure_ascii=False)}\n\n"
         finally:
             if result_text:
                 await db.messages.insert_one({

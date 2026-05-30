@@ -11,6 +11,7 @@ async def connect_db() -> None:
     db = _client[settings.MONGODB_DB_NAME]
     await db.users.create_index("login", unique=True)
     await db.messages.create_index([("login", 1), ("created_at", -1)])
+    await db.ai_cache.create_index([("user_id", 1), ("endpoint", 1)], unique=True)
 
 
 async def close_db() -> None:
