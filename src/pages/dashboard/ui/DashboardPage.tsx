@@ -553,6 +553,8 @@ export const DashboardPage = () => {
               remaining={dashboardCtx.forecastRemaining}
               expenseCount={dashboardCtx.expenseCount}
               userId={user?.email}
+              income={finance.income}
+              expenses={finance.expenses}
               yearSavings={yearSavings}
               yearHealth={yearHealth}
               onAddTransaction={() => (bankConnected ? setAddOpen(true) : setBankOpen(true))}

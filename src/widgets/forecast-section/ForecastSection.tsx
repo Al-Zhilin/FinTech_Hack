@@ -9,6 +9,8 @@ interface Props {
   remaining: number;
   expenseCount: number;
   userId?: string;
+  income?: number;
+  expenses?: number;
   yearSavings: number;
   yearHealth: number;
   onAddTransaction: () => void;
@@ -19,6 +21,8 @@ export const ForecastSection = ({
   remaining,
   expenseCount,
   userId,
+  income,
+  expenses,
   yearSavings,
   yearHealth,
   onAddTransaction,
@@ -107,7 +111,7 @@ export const ForecastSection = ({
       {userId && (
         <>
           <CashflowWidget userId={userId} />
-          <PatternsWidget userId={userId} />
+          <PatternsWidget userId={userId} income={income} expenses={expenses} />
         </>
       )}
     </div>

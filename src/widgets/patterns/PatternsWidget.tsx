@@ -28,19 +28,21 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 interface Props {
   userId: string;
+  income?: number;
+  expenses?: number;
 }
 
-export const PatternsWidget = ({ userId }: Props) => {
+export const PatternsWidget = ({ userId, income, expenses }: Props) => {
   const [data, setData] = useState<PatternsResult | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    getPatterns(userId)
+    getPatterns(userId, income, expenses)
       .then(r => { if (!cancelled) setData(r); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [userId]);
+  }, [userId, income, expenses]);
 
   if (loading) {
     return (

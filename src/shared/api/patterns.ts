@@ -10,9 +10,18 @@ export interface PatternsResult {
   error?: string;
 }
 
-export async function getPatterns(userId: string): Promise<PatternsResult | null> {
+export async function getPatterns(
+  userId: string,
+  income?: number,
+  expenses?: number,
+): Promise<PatternsResult | null> {
   try {
-    const res = await fetch(`${API_BASE}/ai/patterns/${encodeURIComponent(userId)}`);
+    const params = new URLSearchParams();
+    if (income && income > 0)   params.set('income', String(income));
+    if (expenses && expenses > 0) params.set('monthly_expenses', String(expenses));
+    const query = params.toString();
+    const url = `${API_BASE}/ai/patterns/${encodeURIComponent(userId)}${query ? `?${query}` : ''}`;
+    const res = await fetch(url);
     if (!res.ok) return null;
     return res.json();
   } catch {
