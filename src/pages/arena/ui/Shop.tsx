@@ -11,7 +11,7 @@ import { CopyCat } from './CopyCat';
 interface ShopProps { onExit: () => void }
 
 // ─── Примерочная (вкладка «КопиКот») ─────────────────────────────────────────
-const WardrobeTab = ({ onExit }: { onExit: () => void }) => {
+const WardrobeTab = ({ onExit: _onExit }: { onExit: () => void }) => {
   const coins       = useArenaStore(s => s.coins);
   const owned       = useArenaStore(s => s.owned);
   const equipped    = useArenaStore(s => s.equipped);
@@ -190,7 +190,7 @@ const WardrobeTab = ({ onExit }: { onExit: () => void }) => {
         {toast && (
           <motion.div initial={{ opacity:0, y:24, scale:0.9 }} animate={{ opacity:1, y:0, scale:1 }}
             exit={{ opacity:0, y:12 }}
-            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[500] bg-text-primary text-white text-sm font-semibold px-5 py-2.5 rounded-pill shadow-lg whitespace-nowrap">
+            className="fixed bottom-24 md:bottom-4 left-1/2 -translate-x-1/2 z-[500] bg-text-primary text-white text-sm font-semibold px-5 py-2.5 rounded-pill shadow-lg whitespace-nowrap">
             {toast}
           </motion.div>
         )}
@@ -276,7 +276,7 @@ export const Shop = ({ onExit }: ShopProps) => {
     <div className="flex flex-col min-h-dvh bg-bg-base">
 
       {/* Шапка */}
-      <div className="sticky top-0 z-10 bg-bg-base/95 backdrop-blur px-5 pt-12 pb-3 border-b border-border-light">
+      <div className="sticky top-0 z-10 bg-bg-base/95 backdrop-blur px-5 pt-12 md:pt-6 pb-3 border-b border-border-light">
         <div className="flex items-center justify-between mb-4">
           <button onClick={onExit}
             className="w-10 h-10 rounded-full bg-bg-muted flex items-center justify-center text-text-secondary active:scale-90 transition-transform">
@@ -349,7 +349,7 @@ export const Shop = ({ onExit }: ShopProps) => {
         {toast && (
           <motion.div initial={{ opacity:0, y:24, scale:0.9 }} animate={{ opacity:1, y:0, scale:1 }}
             exit={{ opacity:0, y:12 }}
-            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[500] bg-text-primary text-white text-sm font-semibold px-5 py-2.5 rounded-pill shadow-lg whitespace-nowrap">
+            className="fixed bottom-24 md:bottom-4 left-1/2 -translate-x-1/2 z-[500] bg-text-primary text-white text-sm font-semibold px-5 py-2.5 rounded-pill shadow-lg whitespace-nowrap">
             {toast}
           </motion.div>
         )}

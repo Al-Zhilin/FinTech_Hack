@@ -15,8 +15,8 @@ import { useAskAi } from '@/features/ask-ai';
 
 const STORAGE_KEY = 'ekvator_analytics_shown_at';
 const SHOW_DELAY_MS = 10_000;
-const RETURNING_AGE_MS = 90_000;    // >1.5 мин с момента регистрации = вернувшийся
-const COOLDOWN_MS = 24 * 3_600_000; // показываем раз в 24 часа
+const RETURNING_AGE_MS = 24 * 3_600_000; // >24 ч с момента регистрации = вернувшийся
+const COOLDOWN_MS = 24 * 3_600_000;      // показываем раз в 24 часа
 
 const SWIPE_THRESHOLD = 90;
 const VELOCITY_THRESHOLD = 400;
@@ -187,7 +187,7 @@ export const AnalyticsModal = () => {
           <div className="absolute -bottom-24 -left-20 w-80 h-80 rounded-full bg-black/5 blur-3xl pointer-events-none" />
 
           {/* ── Top bar ── */}
-          <div className="absolute top-0 inset-x-0 z-20 flex items-center gap-3 px-5 pt-12">
+          <div className="absolute top-0 inset-x-0 z-20 flex items-center gap-3 px-5 pt-12 md:pt-6">
             {/* Сегментированный прогресс (stories-style) */}
             <div className="flex-1 flex gap-1.5">
               {slides.map((_, i) => (

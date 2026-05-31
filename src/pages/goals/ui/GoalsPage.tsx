@@ -75,7 +75,7 @@ export const GoalsPage = () => {
   const isUserGoal = (id: string) => userGoals.some(g => g.id === id);
 
   return (
-    <motion.div className="flex flex-col bg-bg-base min-h-dvh px-5 pt-12 pb-6"
+    <motion.div className="flex flex-col bg-bg-base min-h-dvh px-5 pt-12 md:pt-6 pb-6"
       variants={container} initial="hidden" animate="show">
 
       <motion.div variants={item} className="mb-6 flex items-start justify-between gap-3">

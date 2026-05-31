@@ -51,7 +51,7 @@ export const ArenaPage = () => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
       className="relative flex flex-col min-h-dvh bg-gradient-to-b from-primary-light/50 to-bg-base overflow-hidden overflow-y-auto">
 
-      <div className="px-5 pt-12 pb-6 flex flex-col gap-4">
+      <div className="px-5 pt-12 md:pt-6 pb-6 flex flex-col gap-4">
         {/* Верхняя строка: баланс + рейтинг */}
         <div className="flex items-center justify-between z-10">
           <div className="flex items-center gap-1.5 bg-white shadow-card text-warning font-extrabold px-3.5 py-2 rounded-pill">
@@ -121,7 +121,7 @@ function PlaySelect({ onPick, onBack, dailyDone }: { onPick: (m: GameMode) => vo
 
   return (
     <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }}
-      className="flex flex-col min-h-dvh bg-bg-base px-5 pt-12 pb-6">
+      className="flex flex-col min-h-dvh bg-bg-base px-5 pt-12 md:pt-6 pb-6">
       <div className="flex items-center gap-3 mb-6">
         <button onClick={onBack} className="w-10 h-10 rounded-full bg-bg-muted flex items-center justify-center text-text-secondary">
           <ArrowLeft size={20} />

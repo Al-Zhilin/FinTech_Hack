@@ -1,130 +1,55 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Button } from '@/shared/ui/Button';
 
-interface Feature {
-  emoji: string;
-  title: string;
-  desc: string;
-  gradient: string;
-  accent: string;
-}
-
-const FEATURES: Feature[] = [
-  {
-    emoji: '🧠',
-    title: 'AI-анализ ваших трат',
-    desc: 'Подключите данные — и увидите, куда реально уходят деньги, без ручного учёта.',
-    gradient: 'from-[#FFF0EC] to-[#FFE4DC]',
-    accent: 'bg-primary',
-  },
-  {
-    emoji: '🎯',
-    title: 'Умные цели и накопления',
-    desc: 'Ставьте цели, а мы рассчитаем, сколько откладывать, чтобы успеть к сроку.',
-    gradient: 'from-[#F3EAFF] to-[#E8D8FF]',
-    accent: 'bg-purple',
-  },
-  {
-    emoji: '🏦',
-    title: 'Подбор кредитов и ипотеки',
-    desc: 'Сравните предложения банков и поймите, какой платёж вам по силам.',
-    gradient: 'from-[#E8F9ED] to-[#D6F5E0]',
-    accent: 'bg-success',
-  },
-  {
-    emoji: '💬',
-    title: 'Финансовый ассистент в чате',
-    desc: 'Спросите что угодно о своих деньгах — ассистент ответит простым языком.',
-    gradient: 'from-[#FFF3E0] to-[#FFE7C2]',
-    accent: 'bg-warning',
-  },
+const FEATURES = [
+  { emoji: '🧠', title: 'AI-анализ трат',          desc: 'Поймите, куда уходят деньги — без ручного учёта.',      gradient: 'from-[#FFF0EC] to-[#FFE4DC]' },
+  { emoji: '🎯', title: 'Умные цели',               desc: 'Рассчитаем, сколько откладывать, чтобы успеть к сроку.', gradient: 'from-[#F3EAFF] to-[#E8D8FF]' },
+  { emoji: '🏦', title: 'Подбор кредитов',          desc: 'Сравните банки и поймите, какой платёж вам по силам.',   gradient: 'from-[#E8F9ED] to-[#D6F5E0]' },
+  { emoji: '💬', title: 'Финансовый ассистент',     desc: 'Спросите что угодно о деньгах — ответ простым языком.',  gradient: 'from-[#FFF3E0] to-[#FFE7C2]' },
 ];
 
-const variants = {
-  enter: (dir: number) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
-  center: { x: 0, opacity: 1 },
-  exit: (dir: number) => ({ x: dir > 0 ? -80 : 80, opacity: 0 }),
-};
+const container = { hidden: {}, show: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } } };
+const item      = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } };
 
-export const Features = ({ onDone }: { onDone: () => void }) => {
-  const [index, setIndex] = useState(0);
-  const [dir, setDir] = useState(1);
-  const isLast = index === FEATURES.length - 1;
-  const f = FEATURES[index];
-
-  const next = () => {
-    if (isLast) return onDone();
-    setDir(1);
-    setIndex(i => i + 1);
-  };
-
-  return (
-    <div className="flex-1 flex flex-col">
-      {/* Skip */}
-      <div className="flex justify-end px-5 pt-5">
-        <button onClick={onDone} className="text-sm font-medium text-text-tertiary px-3 py-1.5">
-          Пропустить
-        </button>
-      </div>
-
-      {/* Illustration */}
-      <div className="flex-1 flex items-center justify-center px-6">
-        <AnimatePresence mode="wait" custom={dir}>
-          <motion.div
-            key={index}
-            custom={dir}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-            className="w-full flex flex-col items-center"
-          >
-            <div className={`w-full aspect-square max-h-[44vh] rounded-3xl bg-gradient-to-br ${f.gradient} flex items-center justify-center relative overflow-hidden`}>
-              <span className="text-[100px] leading-none drop-shadow-sm">{f.emoji}</span>
-              {/* mock floating chips */}
-              <span className="absolute top-6 left-6 px-3 py-1.5 rounded-pill bg-white/80 backdrop-blur text-xs font-semibold text-text-primary shadow-card">
-                +12% к накоплениям
-              </span>
-              <span className="absolute bottom-8 right-6 px-3 py-1.5 rounded-pill bg-white/80 backdrop-blur text-xs font-semibold text-text-primary shadow-card">
-                Прогноз готов
-              </span>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
-      {/* Content */}
-      <div className="px-6 pb-10 pt-6 flex flex-col gap-6">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25 }}
-            className="min-h-[96px]"
-          >
-            <h2 className="text-2xl font-bold text-text-primary mb-2 leading-tight">{f.title}</h2>
-            <p className="text-text-secondary leading-relaxed">{f.desc}</p>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Dots */}
-        <div className="flex gap-1.5 justify-center">
-          {FEATURES.map((_, i) => (
-            <span
-              key={i}
-              className={`h-1.5 rounded-full transition-all duration-300 ${i === index ? 'w-6 bg-primary' : 'w-1.5 bg-border'}`}
-            />
-          ))}
-        </div>
-
-        <Button size="lg" fullWidth onClick={next}>
-          {isLast ? 'Создать аккаунт →' : 'Далее'}
-        </Button>
-      </div>
+export const Features = ({ onDone }: { onDone: () => void }) => (
+  <div className="flex-1 flex flex-col">
+    {/* Skip */}
+    <div className="flex justify-end px-5 pt-5">
+      <button onClick={onDone} className="text-sm font-medium text-text-tertiary px-3 py-1.5">
+        Пропустить
+      </button>
     </div>
-  );
-};
+
+    {/* Header */}
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="px-6 pt-4 pb-6">
+      <h2 className="text-2xl font-bold text-text-primary leading-tight mb-1">
+        Всё для финансового здоровья
+      </h2>
+      <p className="text-text-secondary text-sm">В одном приложении с AI</p>
+    </motion.div>
+
+    {/* 2×2 grid */}
+    <motion.div variants={container} initial="hidden" animate="show"
+      className="px-5 grid grid-cols-2 gap-3 flex-1">
+      {FEATURES.map(f => (
+        <motion.div key={f.emoji} variants={item}
+          className={`rounded-2xl p-4 bg-gradient-to-br ${f.gradient} flex flex-col gap-2`}>
+          <span className="text-3xl leading-none">{f.emoji}</span>
+          <p className="font-bold text-sm text-text-primary leading-snug">{f.title}</p>
+          <p className="text-[11px] text-text-secondary leading-snug">{f.desc}</p>
+        </motion.div>
+      ))}
+    </motion.div>
+
+    {/* CTA */}
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.45, duration: 0.35 }}
+      className="px-6 pt-5 pb-10">
+      <Button size="lg" fullWidth onClick={onDone}>
+        Создать аккаунт →
+      </Button>
+    </motion.div>
+  </div>
+);

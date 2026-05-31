@@ -212,7 +212,7 @@ export const ChatPage = () => {
   return (
     <div className="flex flex-col min-h-dvh bg-bg-base">
       {/* ── Header ── */}
-      <div data-tutorial-target="chat-header" className="glass border-b border-border sticky top-0 z-20 px-5 pt-12 pb-4">
+      <div data-tutorial-target="chat-header" className="glass border-b border-border sticky top-0 z-20 px-5 pt-12 md:pt-4 pb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center shadow-primary">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">

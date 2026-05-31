@@ -9,7 +9,7 @@ export const AppLayout = () => (
   <div className="app-shell relative w-full max-w-mobile h-dvh bg-bg-base flex overflow-hidden">
     <SideNav />
     <div className="app-frame relative flex-1 min-w-0 flex flex-col overflow-hidden">
-      <main className="flex-1 pb-20 overflow-y-auto">
+      <main className="flex-1 pb-20 md:pb-0 overflow-y-auto">
         <Outlet />
       </main>
       <BottomNav />

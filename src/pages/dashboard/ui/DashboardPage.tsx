@@ -417,7 +417,7 @@ export const DashboardPage = () => {
         animate="show"
       >
         {/* ── Header ── */}
-        <motion.div variants={item} className="px-5 pt-12 pb-4">
+        <motion.div variants={item} className="px-5 pt-12 md:pt-6 pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold text-lg shadow-primary">

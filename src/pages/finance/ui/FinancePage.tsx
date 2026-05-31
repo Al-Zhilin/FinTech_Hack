@@ -107,11 +107,11 @@ export const FinancePage = () => {
   const topComment = spendingComment(summary, cats[0]);
 
   return (
-    <motion.div className="flex flex-col bg-bg-base min-h-full pb-24"
+    <motion.div className="flex flex-col bg-bg-base min-h-full pb-24 md:pb-8"
       variants={container} initial="hidden" animate="show">
 
       {/* ── Header: balance + safe to spend ── */}
-      <motion.div variants={item} className="px-5 pt-12 pb-4" data-tutorial-target="finance-balance">
+      <motion.div variants={item} className="px-5 pt-12 md:pt-6 pb-4" data-tutorial-target="finance-balance">
         <h1 className="text-xl font-bold text-text-primary mb-3">Финансы</h1>
         {!bankConnected && (
           <button
@@ -425,7 +425,7 @@ export const FinancePage = () => {
       </motion.div>
 
       {/* ── FAB ── */}
-      <div className="fixed inset-x-0 bottom-24 z-40 pointer-events-none">
+      <div className="fixed inset-x-0 bottom-24 md:bottom-6 z-40 pointer-events-none">
         <div className="max-w-mobile mx-auto px-5 flex justify-end">
           <button data-tutorial-target="add-tx-fab"
             onClick={() => (bankConnected ? setAddOpen(true) : setBankOpen(true))}

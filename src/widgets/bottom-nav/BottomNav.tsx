@@ -8,7 +8,7 @@ import { NAV_ITEMS } from '@/widgets/nav/navItems';
 export const BottomNav = () => {
   const t = useT();
   return (
-  <nav className="app-bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile z-50 glass border-t border-border shadow-bottom-nav shadow-black/10"
+  <nav className="app-bottom-nav md:hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile z-50 glass border-t border-border shadow-bottom-nav shadow-black/10"
        style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}>
     <div className="flex items-center justify-around h-16 px-2">
       {NAV_ITEMS.map(({ to, icon: Icon, tkey, highlight }) => (

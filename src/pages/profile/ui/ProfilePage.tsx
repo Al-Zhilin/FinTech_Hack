@@ -126,7 +126,7 @@ export const ProfilePage = () => {
       <input ref={csvRef} type="file" accept=".csv,text/csv" className="hidden" onChange={onPickCsv} />
 
       {/* ── Header: avatar + DNA + level ── */}
-      <div className="bg-white px-5 pt-12 pb-6 border-b border-border-light">
+      <div className="bg-white px-5 pt-12 md:pt-6 pb-6 border-b border-border-light">
         <motion.div variants={item} className="flex items-center gap-4">
           <div className="relative">
             <button onClick={() => setSheet('photo')} className="block">

@@ -445,7 +445,7 @@ export const AnalyticsPage = () => {
       variants={container} initial="hidden" animate="show">
 
       {/* ── Шапка ── */}
-      <motion.div variants={item} className="px-5 pt-12 pb-4">
+      <motion.div variants={item} className="px-5 pt-12 md:pt-6 pb-4">
         <div className="flex items-center gap-2.5">
           <span className="w-11 h-11 rounded-2xl bg-gradient-primary flex items-center justify-center text-white shadow-primary">
             <Calculator size={22} />

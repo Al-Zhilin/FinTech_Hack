@@ -161,7 +161,7 @@ export const QuizGame = ({ mode, onExit, onWin }: QuizGameProps) => {
 
   // ── Игровой экран ──
   return (
-    <div className="flex flex-col min-h-dvh bg-bg-base px-5 pt-12 pb-6">
+    <div className="flex flex-col min-h-dvh bg-bg-base px-5 pt-12 md:pt-6 pb-6">
       <div className="flex items-center justify-between mb-4">
         <button onClick={onExit} className="w-10 h-10 rounded-full bg-bg-muted flex items-center justify-center text-text-secondary">
           <ArrowLeft size={20} />

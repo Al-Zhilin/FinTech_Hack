@@ -162,7 +162,7 @@ export const PersonalCoach = () => {
   return (
     <>
       {/* ── Floating button ── */}
-      <div className="fixed bottom-20 right-4 z-[300]">
+      <div className="fixed bottom-20 md:bottom-4 right-4 z-[300]">
         <AnimatePresence>
           {!open && (
             <motion.button

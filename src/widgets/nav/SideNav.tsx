@@ -12,7 +12,7 @@ export const SideNav = () => {
   const firstName = user?.name?.split(' ')[0] ?? 'Гость';
 
   return (
-    <aside className="app-side-nav hidden shrink-0 w-64 flex-col bg-white border-r border-border">
+    <aside className="app-side-nav hidden md:flex shrink-0 w-64 flex-col bg-white border-r border-border">
       {/* Логотип / бренд */}
       <div className="flex items-center gap-2.5 px-5 h-[72px] border-b border-border-light">
         <span className="w-9 h-9 rounded-xl bg-gradient-primary flex items-center justify-center shadow-primary">

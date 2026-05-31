@@ -92,6 +92,27 @@
     .max-w-mobile.h-dvh:not(.app-shell) { overflow: hidden; }
   }
 
+  /* ── Широкий десктоп (≥1024px): контейнер на весь экран ──────────────────
+     На этом брейкпоинте убираем «рамку устройства» — приложение занимает
+     весь viewport. Мобильная вёрстка и «оконный» вид 768–1023px не затронуты. */
+  @media (min-width: 1024px) {
+    #root {
+      padding: 0;
+      align-items: stretch;
+      background: linear-gradient(155deg, #F4F0EC 0%, #ECE8F2 100%);
+    }
+
+    .app-shell.max-w-mobile {
+      max-width: 100%;
+    }
+
+    .app-shell.h-dvh {
+      height: 100dvh;
+      border-radius: 0;
+      box-shadow: none;
+    }
+  }
+
   input, textarea, button {
     font-family: inherit;
   }

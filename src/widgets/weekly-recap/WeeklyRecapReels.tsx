@@ -95,7 +95,7 @@ export const WeeklyRecapReels = () => {
           <div className="absolute -bottom-24 -left-20 w-80 h-80 rounded-full bg-black/5 blur-3xl pointer-events-none" />
 
           {/* Top bar */}
-          <div className="absolute top-0 inset-x-0 z-20 flex items-center gap-3 px-5 pt-12">
+          <div className="absolute top-0 inset-x-0 z-20 flex items-center gap-3 px-5 pt-12 md:pt-6">
             <div className="flex-1 flex gap-1.5">
               {story.blocks.map((_, i) => (
                 <div key={i} className="flex-1 h-1 rounded-full bg-white/25 overflow-hidden">
