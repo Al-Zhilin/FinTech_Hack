@@ -233,6 +233,12 @@ export interface CalculatorResult {
   traffic_light?: CalculatorTrafficLight;
 }
 
+export interface ChatStructuredInfo {
+  summary?: string | null;
+  recommendations?: string[];
+  risks?: string[];
+}
+
 export interface ChatMessage {
   id: string;
   role: MessageRole;
@@ -242,4 +248,5 @@ export interface ChatMessage {
   calculator_result?: CalculatorResult;
   table?: string;   // HTML-строка таблицы для рендера
   tableData?: { headers: string[]; rows: string[][] }; // JSON-таблица от AI
+  structuredInfo?: ChatStructuredInfo; // summary / recommendations / risks
 }

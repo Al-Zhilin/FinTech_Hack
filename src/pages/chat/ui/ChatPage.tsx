@@ -7,7 +7,7 @@ import { sendChatMessage } from '@/shared/api/chat';
 import { cn } from '@/shared/lib/cn';
 import { CalculatorResultCard } from '@/widgets/chat/CalculatorResultCard';
 import { ChatTable, ChatTableData, MarkdownTable } from '@/widgets/chat/ChatTable';
-import type { ChatMessage } from '@/shared/types';
+import type { ChatMessage, ChatStructuredInfo } from '@/shared/types';
 
 // ─── Quick prompts ─────────────────────────────────────────────────────────────
 
@@ -110,6 +110,53 @@ const MessageBubble = ({ msg }: { msg: ChatMessage }) => {
       {msg.tableData && <ChatTableData data={msg.tableData} />}
       {msg.table && !msg.tableData && <ChatTable html={msg.table} />}
 
+      {/* Структурированные блоки: summary / recommendations / risks */}
+      {!isUser && msg.structuredInfo && (
+        <div className="ml-10 mt-1.5 flex flex-col gap-1.5 w-full max-w-[calc(100%-40px)]">
+          {msg.structuredInfo.summary && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+              className="rounded-2xl bg-primary-light border border-primary/15 px-3.5 py-2.5"
+            >
+              <p className="text-[11px] font-extrabold text-primary uppercase tracking-wide mb-1">💡 Вывод</p>
+              <p className="text-xs text-text-secondary leading-snug">{msg.structuredInfo.summary}</p>
+            </motion.div>
+          )}
+          {msg.structuredInfo.recommendations && msg.structuredInfo.recommendations.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+              className="rounded-2xl bg-success-light border border-success/20 px-3.5 py-2.5"
+            >
+              <p className="text-[11px] font-extrabold text-success uppercase tracking-wide mb-1.5">✅ Рекомендации</p>
+              <ul className="flex flex-col gap-1">
+                {msg.structuredInfo.recommendations.map((r, i) => (
+                  <li key={i} className="flex items-start gap-1.5 text-xs text-text-secondary leading-snug">
+                    <span className="text-success font-bold flex-shrink-0 mt-0.5">•</span>
+                    <span>{r}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          )}
+          {msg.structuredInfo.risks && msg.structuredInfo.risks.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+              className="rounded-2xl bg-warning-light border border-warning/20 px-3.5 py-2.5"
+            >
+              <p className="text-[11px] font-extrabold text-warning uppercase tracking-wide mb-1.5">⚠️ Риски</p>
+              <ul className="flex flex-col gap-1">
+                {msg.structuredInfo.risks.map((r, i) => (
+                  <li key={i} className="flex items-start gap-1.5 text-xs text-text-secondary leading-snug">
+                    <span className="text-warning font-bold flex-shrink-0 mt-0.5">•</span>
+                    <span>{r}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          )}
+        </div>
+      )}
+
       {hasCalcResult && (
         <CalculatorResultCard result={msg.calculator_result!} />
       )}
@@ -188,6 +235,7 @@ export const ChatPage = () => {
     let calcResult = undefined;
     let tableHtml: string | undefined = undefined;
     let tableData: { headers: string[]; rows: string[][] } | undefined = undefined;
+    let structuredInfo: ChatStructuredInfo | undefined = undefined;
     try {
       const result = await sendChatMessage(login, payload, (raw) =>
         setStatus(STATUS_LABELS[raw] ?? raw),
@@ -212,6 +260,17 @@ export const ChatPage = () => {
         tableHtml = result.table ?? result.structured?.table ?? undefined;
       }
 
+      // 4. Структурированные блоки: summary / recommendations / risks
+      const s = result.structured;
+      if (s) {
+        const summary = s.summary as string | null | undefined;
+        const recommendations = Array.isArray(s.recommendations) ? s.recommendations as string[] : undefined;
+        const risks = Array.isArray(s.risks) ? s.risks as string[] : undefined;
+        if (summary || recommendations?.length || risks?.length) {
+          structuredInfo = { summary, recommendations, risks };
+        }
+      }
+
       const cr = result.structured?.calculator_result;
       if (cr && Object.keys(cr).length > 0) calcResult = cr;
     } catch {
@@ -228,6 +287,7 @@ export const ChatPage = () => {
       calculator_result: calcResult,
       table: tableHtml,
       tableData,
+      structuredInfo,
     }]);
   };
 
