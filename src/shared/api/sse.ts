@@ -47,9 +47,33 @@ export async function streamSse(
     try {
       data = JSON.parse(raw);
     } catch {
-      // не JSON — пропускаем, не роняя поток
-      eventType = '';
-      return;
+      // Попытка обработать смешанный формат: «{json}<table>{tableJson}<table>»
+      // — бэкенд иногда добавляет таблицу после основного JSON-объекта.
+      const tableIdx = raw.indexOf('<table>');
+      if (tableIdx > 0) {
+        try {
+          data = JSON.parse(raw.slice(0, tableIdx).trimEnd());
+          const tableContent = raw
+            .slice(tableIdx)
+            .match(/<table>([\s\S]*?)(?:<\/table>|<table>|$)/)?.[1]
+            ?.trim();
+          if (tableContent) {
+            try {
+              const tableJson = JSON.parse(tableContent);
+              if (Array.isArray(tableJson?.headers) && Array.isArray(tableJson?.rows)) {
+                data._tableJson = tableJson;
+              }
+            } catch { /* таблица необязательна */ }
+          }
+        } catch {
+          eventType = '';
+          return;
+        }
+      } else {
+        // не JSON и нет таблицы — пропускаем
+        eventType = '';
+        return;
+      }
     }
 
     if (eventType === 'status') {

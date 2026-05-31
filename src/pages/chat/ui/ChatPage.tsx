@@ -6,7 +6,7 @@ import { useChatStore } from '@/entities/chat/model/chatStore';
 import { sendChatMessage } from '@/shared/api/chat';
 import { cn } from '@/shared/lib/cn';
 import { CalculatorResultCard } from '@/widgets/chat/CalculatorResultCard';
-import { ChatTable, MarkdownTable } from '@/widgets/chat/ChatTable';
+import { ChatTable, ChatTableData, MarkdownTable } from '@/widgets/chat/ChatTable';
 import type { ChatMessage } from '@/shared/types';
 
 // ─── Quick prompts ─────────────────────────────────────────────────────────────
@@ -107,7 +107,8 @@ const MessageBubble = ({ msg }: { msg: ChatMessage }) => {
         </div>
       </motion.div>
 
-      {msg.table && <ChatTable html={msg.table} />}
+      {msg.tableData && <ChatTableData data={msg.tableData} />}
+      {msg.table && !msg.tableData && <ChatTable html={msg.table} />}
 
       {hasCalcResult && (
         <CalculatorResultCard result={msg.calculator_result!} />
@@ -120,6 +121,28 @@ const MessageBubble = ({ msg }: { msg: ChatMessage }) => {
 
 let msgId = 0;
 const newId = () => String(++msgId);
+
+// Извлекает <table>{JSON}<table> или <table>{JSON}</table> из текста,
+// возвращает очищенный текст и данные таблицы.
+function extractTableFromText(text: string): {
+  cleanText: string;
+  tableData: { headers: string[]; rows: string[][] } | null;
+} {
+  const regex = /<table>([\s\S]*?)(?:<\/table>|<table>)/g;
+  let tableData: { headers: string[]; rows: string[][] } | null = null;
+  const cleanText = text.replace(regex, (_, content) => {
+    if (!tableData) {
+      try {
+        const parsed = JSON.parse(content.trim());
+        if (Array.isArray(parsed?.headers) && Array.isArray(parsed?.rows)) {
+          tableData = parsed;
+        }
+      } catch { /* ignore */ }
+    }
+    return '';
+  }).trim();
+  return { cleanText, tableData };
+}
 
 const INITIAL_MSG: ChatMessage = {
   id: '0',
@@ -164,13 +187,31 @@ export const ChatPage = () => {
     let content: string;
     let calcResult = undefined;
     let tableHtml: string | undefined = undefined;
+    let tableData: { headers: string[]; rows: string[][] } | undefined = undefined;
     try {
       const result = await sendChatMessage(login, payload, (raw) =>
         setStatus(STATUS_LABELS[raw] ?? raw),
       );
+
       content = result.text || 'Не удалось получить ответ. Попробуйте переформулировать вопрос.';
-      // table: верхний уровень имеет приоритет, потом structured.table
-      tableHtml = result.table ?? result.structured?.table ?? undefined;
+
+      // 1. Таблица из смешанного формата {json}<table>...</table> (через sse.ts)
+      if (result._tableJson) {
+        tableData = result._tableJson;
+      }
+
+      // 2. Таблица, встроенная в сам текст ответа: <table>{JSON}<table>
+      if (!tableData && content.includes('<table>')) {
+        const extracted = extractTableFromText(content);
+        content = extracted.cleanText || content;
+        if (extracted.tableData) tableData = extracted.tableData;
+      }
+
+      // 3. HTML-таблица (устаревший формат, оставляем для совместимости)
+      if (!tableData) {
+        tableHtml = result.table ?? result.structured?.table ?? undefined;
+      }
+
       const cr = result.structured?.calculator_result;
       if (cr && Object.keys(cr).length > 0) calcResult = cr;
     } catch {
@@ -186,6 +227,7 @@ export const ChatPage = () => {
       timestamp: new Date().toISOString(),
       calculator_result: calcResult,
       table: tableHtml,
+      tableData,
     }]);
   };
 

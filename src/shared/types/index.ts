@@ -241,4 +241,5 @@ export interface ChatMessage {
   isTyping?: boolean;
   calculator_result?: CalculatorResult;
   table?: string;   // HTML-строка таблицы для рендера
+  tableData?: { headers: string[]; rows: string[][] }; // JSON-таблица от AI
 }

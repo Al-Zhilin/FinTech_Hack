@@ -155,6 +155,11 @@ export const ChatTable = ({ html }: { html: string }) => {
   return <div className="ml-10"><TableView table={table} /></div>;
 };
 
+/** Для JSON-таблицы из смешанного формата {json}<table>{tableJson}<table> */
+export const ChatTableData = ({ data }: { data: { headers: string[]; rows: string[][] } }) => (
+  <div className="ml-10"><TableView table={data} /></div>
+);
+
 /** Для Markdown-таблицы из текста нейросети — используется в ReactMarkdown */
 export const MarkdownTable = ({ children }: { children: React.ReactNode }) => {
   // ReactMarkdown рендерит <table> с children — просто красиво оформим

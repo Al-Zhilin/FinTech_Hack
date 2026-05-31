@@ -3,12 +3,18 @@ import type { CalculatorResult } from '@/shared/types';
 
 const API_BASE = '/api/v1';
 
+export interface JsonTable {
+  headers: string[];
+  rows: string[][];
+}
+
 export interface ChatResult {
   text: string;
   table?: string;           // HTML-строка таблицы (опционально, на верхнем уровне)
+  _tableJson?: JsonTable;   // JSON-таблица, извлечённая из смешанного формата в sse.ts
   structured?: {
     calculator_result?: CalculatorResult;
-    table?: string;         // HTML-строка таблицы (опционально, внутри structured)
+    table?: string;
     summary?: string | null;
     recommendations?: string[];
     risks?: string[];
