@@ -377,14 +377,9 @@ export const PersonalCoach = () => {
                           <p className="text-sm font-semibold text-text-primary leading-relaxed">{ctx.tip}</p>
                         </div>
 
-                        {/* Быстрые действия по разделам */}
+                        {/* Быстрые действия — состав зависит от финансового здоровья */}
                         <p className="text-xs font-bold text-text-tertiary uppercase tracking-wide">Куда зайти прямо сейчас</p>
-                        {[
-                          { icon: '📊', label: 'Посмотреть расходы', route: '/finance', desc: 'Категории и динамика трат' },
-                          { icon: '🎯', label: 'Проверить цели', route: '/goals', desc: 'Прогресс накоплений' },
-                          { icon: '🏦', label: 'Кредитный калькулятор', route: '/analytics', desc: 'Рассчитать условия под тебя' },
-                          { icon: '🐾', label: 'К КопиКоту', route: '/arena', desc: 'Квиз дня и монеты' },
-                        ].map(({ icon, label, route, desc }) => (
+                        {ctx.quickActions.map(({ icon, label, route, desc }) => (
                           <button
                             key={route}
                             onClick={() => { setOpen(false); navigate(route); }}

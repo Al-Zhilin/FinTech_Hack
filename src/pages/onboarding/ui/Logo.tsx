@@ -6,7 +6,7 @@ interface LogoProps {
 }
 
 /**
- * Эквватор mark: a balanced sphere split by an "equator" line, with an
+ * КопиКот mark: a balanced sphere split by an "equator" line, with an
  * orbiting coin. The orbit ring rotates while loading.
  */
 export const Logo = ({ size = 96, spinning = false }: LogoProps) => (

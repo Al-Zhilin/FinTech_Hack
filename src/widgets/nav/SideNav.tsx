@@ -3,6 +3,7 @@ import { cn } from '@/shared/lib/cn';
 import { useT } from '@/shared/config/i18n';
 import { useUserStore } from '@/entities/user/model/userStore';
 import { NAV_ITEMS } from './navItems';
+import copycatJump from '@/assets/copycat-jump.png';
 
 // Боковая панель навигации — только на десктопе (≥768px).
 // На мобильных скрыта (desktop-only класс), там работает BottomNav.
@@ -15,10 +16,8 @@ export const SideNav = () => {
     <aside className="app-side-nav hidden md:flex shrink-0 w-64 flex-col bg-white border-r border-border">
       {/* Логотип / бренд */}
       <div className="flex items-center gap-2.5 px-5 h-[72px] border-b border-border-light">
-        <span className="w-9 h-9 rounded-xl bg-gradient-primary flex items-center justify-center shadow-primary">
-          <span className="text-white font-extrabold text-lg leading-none">Э</span>
-        </span>
-        <span className="font-extrabold text-lg text-text-primary">Эквватор</span>
+        <img src={copycatJump} alt="КопиКот" className="w-9 h-9 object-contain" />
+        <span className="font-extrabold text-lg text-text-primary">КопиКот</span>
       </div>
 
       {/* Пункты меню */}

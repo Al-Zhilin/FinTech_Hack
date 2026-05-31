@@ -20,7 +20,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     route: '/dashboard',
     emoji: '👋',
     outfit: 'party',
-    title: 'Добро пожаловать в Эквватор!',
+    title: 'Добро пожаловать в КопиКот!',
     body: 'Здесь твой финансовый центр — баланс, расходы, цели и AI-советы в одном месте. Проведём короткий тур за 60 секунд.',
     position: 'center',
     action: 'Начать тур →',
@@ -152,14 +152,14 @@ export const useTutorialStore = create<TutorialState>()(
       done: false,
       active: false,
       stepIdx: 0,
-      start:  () => set({ active: true, stepIdx: 0, done: false }),
-      next:   () => {
+      start: () => set({ active: true, stepIdx: 0, done: false }),
+      next: () => {
         const { stepIdx } = get();
         const next = stepIdx + 1;
         if (next >= TUTORIAL_STEPS.length) set({ active: false, done: true, stepIdx: 0 });
         else set({ stepIdx: next });
       },
-      skip:  () => set({ active: false, done: true, stepIdx: 0 }),
+      skip: () => set({ active: false, done: true, stepIdx: 0 }),
       reset: () => set({ done: false, active: false, stepIdx: 0 }),
     }),
     { name: 'ekvator-tutorial' },
