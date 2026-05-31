@@ -9,9 +9,14 @@ export interface ChatResult {
   structured?: {
     calculator_result?: CalculatorResult;
     table?: string;         // HTML-строка таблицы (опционально, внутри structured)
+    summary?: string | null;
+    recommendations?: string[];
+    risks?: string[];
     [key: string]: unknown;
   };
-  error?: string;
+  sources?: string[];
+  intent?: string;
+  error?: string | null;
 }
 
 /**

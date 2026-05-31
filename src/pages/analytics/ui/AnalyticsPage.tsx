@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calculator, Banknote, Scale, Percent, Clock, BadgeCheck,
@@ -21,6 +21,7 @@ import { Card } from '@/shared/ui/Card';
 import { Badge } from '@/shared/ui/Badge';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { AskAiButton } from '@/features/ask-ai';
+import { getBankOffers, type BankOfferItem } from '@/shared/api/bankOffers';
 import type { Bank, BankOffer, PaymentType } from '@/shared/types';
 
 const item      = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
@@ -345,6 +346,10 @@ export const AnalyticsPage = () => {
   const [rfRate,    setRfRate]    = useState(28);
   const [rfMonths,  setRfMonths]  = useState(36);
 
+  const [aiOffers,      setAiOffers]      = useState<BankOfferItem[] | null>(null);
+  const [aiOffersLoading, setAiOffersLoading] = useState(false);
+  const aiDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [epBalance, setEpBalance] = useState(600_000);
   const [epRate,    setEpRate]    = useState(24);
   const [epMonths,  setEpMonths]  = useState(48);
@@ -384,6 +389,20 @@ export const AnalyticsPage = () => {
     [cfg, withInsurance],
   );
   const maxLoan = maxAffordablePrincipal(income, expenses, existingCredit, bestRate, term);
+
+  // Загрузка AI-предложений банков с дебаунсом (только для продуктов с заёмом)
+  useEffect(() => {
+    if (!isBorrow || !user?.email || principal < 10_000) return;
+    if (aiDebounceRef.current) clearTimeout(aiDebounceRef.current);
+    aiDebounceRef.current = setTimeout(async () => {
+      setAiOffersLoading(true);
+      const result = await getBankOffers(user.email, principal, bestRate, term);
+      setAiOffersLoading(false);
+      setAiOffers(result?.offers ?? null);
+    }, 1200);
+    return () => { if (aiDebounceRef.current) clearTimeout(aiDebounceRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [principal, term, bestRate, isBorrow, user?.email]);
 
   // Сравнение сценариев: текущий срок vs +12 и -12 месяцев
   const altShort = term - 12 >= cfg.termMin
@@ -764,6 +783,71 @@ export const AnalyticsPage = () => {
               <BankOfferCard key={offer.bank.id} offer={offer} rank={i} onOpen={() => setDetail(offer.bank)} />
             ))}
           </motion.div>
+
+          {/* AI-подбор банков */}
+          {(aiOffersLoading || (aiOffers && aiOffers.length > 0)) && (
+            <motion.div variants={item} className="px-5 mt-2">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles size={15} className="text-primary" />
+                <span className="text-sm font-extrabold text-text-primary">AI подобрал предложения</span>
+                {aiOffersLoading && (
+                  <span className="text-xs text-text-tertiary ml-auto animate-pulse">Ищем…</span>
+                )}
+              </div>
+              {aiOffersLoading ? (
+                <div className="flex flex-col gap-2">
+                  {[1, 2].map(i => (
+                    <div key={i} className="rounded-2xl bg-white shadow-card p-4 animate-pulse">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-xl bg-border-light" />
+                        <div className="flex-1">
+                          <div className="h-3 bg-border-light rounded w-1/2 mb-2" />
+                          <div className="h-2 bg-border-light rounded w-1/3" />
+                        </div>
+                      </div>
+                      <div className="h-4 bg-border-light rounded w-2/3" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {aiOffers!.slice(0, 3).map((offer, i) => (
+                    <div key={offer.bank_name + i}
+                      className={`rounded-2xl bg-white shadow-card border p-4 ${i === 0 ? 'border-primary/30 ring-1 ring-primary/15' : 'border-border-light'}`}>
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center text-primary font-extrabold text-sm flex-shrink-0">
+                          {offer.bank_name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="font-bold text-text-primary truncate">{offer.bank_name}</p>
+                            {i === 0 && <Badge variant="success">Лучшее</Badge>}
+                          </div>
+                          <p className="text-xs text-text-tertiary">Оценка: {Math.round(offer.score * 100)}%</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-lg font-extrabold text-primary">{offer.rate}%</p>
+                          <p className="text-[10px] text-text-tertiary">ставка</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-border-light">
+                        <div>
+                          <p className="text-xs text-text-tertiary">Платёж / мес.</p>
+                          <p className="text-base font-extrabold text-text-primary">{formatCurrency(Math.round(offer.monthly_payment))}</p>
+                        </div>
+                        {offer.offer_url && (
+                          <a href={offer.offer_url} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-xs font-bold text-primary bg-primary-light px-3 py-1.5 rounded-xl">
+                            Перейти <ArrowRight size={12} />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
         </>
       )}
 

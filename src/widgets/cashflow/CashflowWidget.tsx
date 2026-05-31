@@ -83,6 +83,26 @@ export const CashflowWidget = ({ userId }: Props) => {
             </p>
           )}
 
+          {/* Ключевые цифры */}
+          {(data.projected_balance != null || data.daily_burn != null) && (
+            <div className="flex gap-2 mb-2">
+              {data.projected_balance != null && (
+                <div className="flex-1 bg-bg-muted rounded-xl px-3 py-2">
+                  <p className="text-[10px] text-text-tertiary">Остаток к зарплате</p>
+                  <p className={`text-sm font-bold ${data.projected_balance < 0 ? 'text-danger' : 'text-text-primary'}`}>
+                    {formatCurrency(data.projected_balance, true)}
+                  </p>
+                </div>
+              )}
+              {data.daily_burn != null && (
+                <div className="flex-1 bg-bg-muted rounded-xl px-3 py-2">
+                  <p className="text-[10px] text-text-tertiary">Трачу в день</p>
+                  <p className="text-sm font-bold text-text-primary">{formatCurrency(data.daily_burn, true)}</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {hasForecast && (
             <div className="h-20 mt-1 mb-2">
               <ResponsiveContainer width="100%" height="100%">
@@ -94,8 +114,8 @@ export const CashflowWidget = ({ userId }: Props) => {
                     contentStyle={{ fontSize: 11, borderRadius: 8 }}
                   />
                   <ReferenceLine y={0} stroke="#FF3B30" strokeDasharray="3 3" />
-                  {(data.risk_events ?? []).map(d => (
-                    <ReferenceLine key={d} x={d} stroke="#FF9500" strokeDasharray="2 2" />
+                  {(data.risk_events ?? []).map(e => (
+                    <ReferenceLine key={e.day} x={e.day} stroke="#FF9500" strokeDasharray="2 2" />
                   ))}
                   <Line
                     type="monotone" dataKey="balance" dot={false}

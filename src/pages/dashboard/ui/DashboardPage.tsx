@@ -20,6 +20,7 @@ import { ConnectBankSheet } from '@/features/connect-bank';
 import { AskAiButton, useAskAi } from '@/features/ask-ai';
 import { HomeHero } from './HomeHero';
 import { ForecastSection } from '@/widgets/forecast-section/ForecastSection';
+import { getDailyAction, type DailyActionResult } from '@/shared/api/dailyAction';
 
 // ─── Stagger animation ─────────────────────────────────────────────────────────
 const item = {
@@ -346,6 +347,7 @@ export const DashboardPage = () => {
   const [selectedDay, setSelectedDay] = useState(() => new Date());
   const [addOpen, setAddOpen] = useState(false);
   const [bankOpen, setBankOpen] = useState(false);
+  const [dailyAction, setDailyAction] = useState<DailyActionResult | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const allTx = userTx;
@@ -398,6 +400,11 @@ export const DashboardPage = () => {
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  useEffect(() => {
+    if (!user?.email) return;
+    getDailyAction(user.email).then(setDailyAction);
+  }, [user?.email]);
 
   useEffect(() => {
     setVisibleInsights(profile.insights);
@@ -462,6 +469,27 @@ export const DashboardPage = () => {
               {visibleInsights.slice(0, 2).map(insight => (
                 <InsightCard key={insight.id} insight={insight} onDismiss={() => dismissInsight(insight.id)} />
               ))}
+            </motion.div>
+          )}
+
+          {/* ── Действие дня от AI ── */}
+          {dailyAction && (
+            <motion.div variants={item} className="px-5 mb-4">
+              <div className="rounded-2xl bg-gradient-to-br from-primary-light to-purple/5 border border-primary/15 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-base">⚡</span>
+                  <span className="text-xs font-extrabold text-primary uppercase tracking-wide">Действие дня</span>
+                  {dailyAction.category && (
+                    <span className="ml-auto text-[10px] font-semibold text-text-tertiary bg-white/70 px-2 py-0.5 rounded-full">
+                      {dailyAction.category}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm font-semibold text-text-primary leading-snug mb-1">{dailyAction.action}</p>
+                {dailyAction.impact && (
+                  <p className="text-xs text-text-secondary leading-snug">📈 {dailyAction.impact}</p>
+                )}
+              </div>
             </motion.div>
           )}
 

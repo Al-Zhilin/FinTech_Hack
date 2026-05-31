@@ -3,16 +3,28 @@ const API_BASE = '/api/v1';
 export interface ForecastDay {
   day: number;
   balance: number;
-  event?: string;
+  event?: string | null;
+}
+
+export interface RiskEvent {
+  day: number;
+  balance: number;
+  event: string;
 }
 
 export interface CashflowResult {
+  projected_balance?: number | null;
   will_be_negative?: boolean;
-  danger_day?: number;
+  shortage?: number | null;
+  days_to_salary?: number | null;
+  daily_avg_spend?: number | null;
+  danger_day?: number | null;
   verdict?: string;
+  daily_burn?: number | null;
   forecast?: ForecastDay[];
-  risk_events?: number[];
-  error?: string;
+  risk_events?: RiskEvent[];
+  critical_day?: number | null;
+  error?: string | null;
 }
 
 export async function getCashflow(userId: string): Promise<CashflowResult | null> {
