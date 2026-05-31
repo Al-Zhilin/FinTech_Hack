@@ -10,7 +10,9 @@ export const AppLayout = () => (
     <SideNav />
     <div className="app-frame relative flex-1 min-w-0 flex flex-col overflow-hidden">
       <main className="flex-1 pb-20 md:pb-0 overflow-y-auto">
-        <Outlet />
+        <div className="lg:max-w-[860px] 2xl:max-w-[1060px] lg:mx-auto lg:min-h-full">
+          <Outlet />
+        </div>
       </main>
       <BottomNav />
       <WeeklyRecapReels />

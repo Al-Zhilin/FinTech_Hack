@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useUserStore } from '@/entities/user/model/userStore';
 import { useFinanceStore, useFinanceAnalysis } from '@/entities/finance/model/financeStore';
 import { useUserTxStore } from '@/entities/finance/model/userTxStore';
@@ -336,6 +336,195 @@ const PersonalPlanBlock = ({ summary }: { summary: string }) => {
   );
 };
 
+// ─── Full Calendar Picker ─────────────────────────────────────────────────────
+
+const MONTH_NAMES_RU = [
+  'Январь','Февраль','Март','Апрель','Май','Июнь',
+  'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь',
+];
+const DAY_ABBR = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+const FullCalendarPicker = ({
+  selected,
+  onSelect,
+  onClose,
+}: {
+  selected: Date;
+  onSelect: (d: Date) => void;
+  onClose: () => void;
+}) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [viewYear,  setViewYear]  = useState(selected.getFullYear());
+  const [viewMonth, setViewMonth] = useState(selected.getMonth());
+  const [mode, setMode] = useState<'days' | 'months'>('days');
+
+  // Строим сетку дней: пустые ячейки + числа месяца
+  const firstDow  = new Date(viewYear, viewMonth, 1).getDay(); // 0=Вс
+  const leadEmpty = firstDow === 0 ? 6 : firstDow - 1;        // смещение на Пн
+  const daysTotal = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const cells: (number | null)[] = [
+    ...Array(leadEmpty).fill(null),
+    ...Array.from({ length: daysTotal }, (_, i) => i + 1),
+  ];
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  // Ограничения навигации
+  const MIN_YEAR = today.getFullYear() - 3;
+  const canPrevMonth = !(viewYear === MIN_YEAR && viewMonth === 0);
+  const canNextMonth = new Date(viewYear, viewMonth + 1, 1) <=
+    new Date(today.getFullYear(), today.getMonth(), 1);
+  const canPrevYear = viewYear > MIN_YEAR;
+  const canNextYear = viewYear < today.getFullYear();
+
+  const prevMonth = () => {
+    if (!canPrevMonth) return;
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
+    else setViewMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    if (!canNextMonth) return;
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
+    else setViewMonth(m => m + 1);
+  };
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[400] flex items-end justify-center"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+    >
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+
+      <motion.div
+        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+        transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+        className="relative w-full max-w-mobile bg-white rounded-t-3xl shadow-lg overflow-hidden"
+      >
+        {/* Ручка */}
+        <div className="flex justify-center pt-3 pb-0">
+          <div className="w-10 h-1 rounded-full bg-border" />
+        </div>
+
+        {/* Навигация месяц/год */}
+        <div className="flex items-center justify-between px-5 pt-3 pb-3">
+          <button
+            onClick={mode === 'days' ? prevMonth : () => canPrevYear && setViewYear(y => y - 1)}
+            disabled={mode === 'days' ? !canPrevMonth : !canPrevYear}
+            className="w-9 h-9 rounded-xl bg-bg-muted flex items-center justify-center text-text-secondary disabled:opacity-25 transition-opacity"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+
+          <button
+            onClick={() => setMode(m => m === 'days' ? 'months' : 'days')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-bg-muted transition-colors"
+          >
+            <span className="text-base font-extrabold text-text-primary">
+              {mode === 'days'
+                ? `${MONTH_NAMES_RU[viewMonth]} ${viewYear}`
+                : String(viewYear)}
+            </span>
+            <svg
+              width="14" height="14" viewBox="0 0 24 24" fill="none"
+              className={`text-text-tertiary transition-transform duration-200 ${mode === 'months' ? 'rotate-180' : ''}`}
+            >
+              <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+
+          <button
+            onClick={mode === 'days' ? nextMonth : () => canNextYear && setViewYear(y => y + 1)}
+            disabled={mode === 'days' ? !canNextMonth : !canNextYear}
+            className="w-9 h-9 rounded-xl bg-bg-muted flex items-center justify-center text-text-secondary disabled:opacity-25 transition-opacity"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* ── Выбор месяца ── */}
+        {mode === 'months' ? (
+          <div className="grid grid-cols-3 gap-2 px-5 pb-8 pt-1">
+            {MONTH_NAMES_RU.map((name, mi) => {
+              const isFuture =
+                viewYear > today.getFullYear() ||
+                (viewYear === today.getFullYear() && mi > today.getMonth());
+              const isCurMonth =
+                viewYear === today.getFullYear() && mi === today.getMonth();
+              const isSel =
+                viewYear === selected.getFullYear() && mi === selected.getMonth();
+              return (
+                <button
+                  key={mi}
+                  disabled={isFuture}
+                  onClick={() => { setViewMonth(mi); setMode('days'); }}
+                  className={`h-11 rounded-2xl text-sm font-semibold transition-all
+                    ${isSel    ? 'bg-gradient-primary text-white shadow-primary' :
+                      isCurMonth ? 'bg-text-primary text-white' :
+                      isFuture   ? 'text-text-tertiary opacity-30 cursor-not-allowed' :
+                                   'bg-bg-muted text-text-primary hover:bg-border-light'}`}
+                >
+                  {name.slice(0, 3)}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          /* ── Сетка дней ── */
+          <div className="pb-6">
+            {/* Имена дней */}
+            <div className="grid grid-cols-7 px-5 mb-1">
+              {DAY_ABBR.map(d => (
+                <span key={d} className="text-center text-[11px] text-text-tertiary font-medium py-1">{d}</span>
+              ))}
+            </div>
+
+            {/* Ячейки */}
+            <div className="grid grid-cols-7 px-5 gap-y-0.5">
+              {cells.map((day, i) => {
+                if (!day) return <div key={`e-${i}`} className="h-9" />;
+                const date = new Date(viewYear, viewMonth, day);
+                date.setHours(0, 0, 0, 0);
+                const isFuture   = date > today;
+                const isDayToday = date.getTime() === today.getTime();
+                const isSel      = date.toDateString() === selected.toDateString();
+                return (
+                  <button
+                    key={`d-${day}`}
+                    disabled={isFuture}
+                    onClick={() => { onSelect(new Date(date)); onClose(); }}
+                    className={`h-9 w-full rounded-full flex items-center justify-center text-[13px] font-semibold transition-all
+                      ${isSel      ? 'bg-gradient-primary text-white shadow-primary scale-105' :
+                        isDayToday ? 'bg-text-primary text-white' :
+                        isFuture   ? 'text-text-tertiary opacity-30 cursor-not-allowed' :
+                                     'text-text-primary hover:bg-bg-muted active:scale-95'}`}
+                  >
+                    {day}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Кнопка «Сегодня» */}
+            <div className="px-5 mt-4">
+              <button
+                onClick={() => { onSelect(new Date(today)); onClose(); }}
+                className="w-full h-11 rounded-2xl bg-bg-muted text-text-primary font-semibold text-sm hover:bg-border-light transition-colors"
+              >
+                Перейти к сегодня
+              </button>
+            </div>
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
+  );
+};
+
 // ─── Main Dashboard ────────────────────────────────────────────────────────────
 
 export const DashboardPage = () => {
@@ -347,6 +536,7 @@ export const DashboardPage = () => {
   const [selectedDay, setSelectedDay] = useState(() => new Date());
   const [addOpen, setAddOpen] = useState(false);
   const [bankOpen, setBankOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [dailyAction, setDailyAction] = useState<DailyActionResult | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -435,12 +625,17 @@ export const DashboardPage = () => {
                 <h1 className="text-xl font-bold text-text-primary">{firstName}</h1>
               </div>
             </div>
-            <button className="w-10 h-10 rounded-xl bg-white shadow-card flex items-center justify-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="#1C1C1E" strokeWidth="1.8" />
-                <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="#1C1C1E" strokeWidth="1.8" />
-                <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="#1C1C1E" strokeWidth="1.8" />
-                <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="#1C1C1E" strokeWidth="1.8" />
+            <button
+              onClick={() => setCalendarOpen(true)}
+              className="w-10 h-10 rounded-xl bg-white shadow-card flex items-center justify-center active:scale-95 transition-transform"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="4" width="18" height="17" rx="3" stroke="#1C1C1E" strokeWidth="1.8"/>
+                <path d="M3 9H21" stroke="#1C1C1E" strokeWidth="1.8" strokeLinecap="round"/>
+                <path d="M8 2V6M16 2V6" stroke="#1C1C1E" strokeWidth="1.8" strokeLinecap="round"/>
+                <circle cx="8" cy="14" r="1.2" fill="#1C1C1E"/>
+                <circle cx="12" cy="14" r="1.2" fill="#1C1C1E"/>
+                <circle cx="16" cy="14" r="1.2" fill="#1C1C1E"/>
               </svg>
             </button>
           </div>
@@ -632,6 +827,16 @@ export const DashboardPage = () => {
         )}
       </motion.div>
 
+
+      <AnimatePresence>
+        {calendarOpen && (
+          <FullCalendarPicker
+            selected={selectedDay}
+            onSelect={(d) => setSelectedDay(d)}
+            onClose={() => setCalendarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       <ConnectBankSheet open={bankOpen} onClose={() => setBankOpen(false)} />
 
